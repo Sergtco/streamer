@@ -1,4 +1,4 @@
-#Usage
+# Usage
 To start use server, you should have `catalogue/` and `hls/` directories placed at the root of project.\
 `catalogue/` - used to store your mp3 files.\
 `hls/` - used to stream segmented songs 
