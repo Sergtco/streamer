@@ -9,10 +9,6 @@ import (
 	"strings"
 )
 
-const (
-	cataloguePath = "./catalogue/" // mp3 file storage
-	outputPath    = "./hls/" // directory for segmented music
-)
 
 // To access the song url should look like: http://localhost:8080/get?song=song_name
 //
