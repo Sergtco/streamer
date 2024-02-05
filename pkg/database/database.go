@@ -2,7 +2,7 @@ package database
 
 /*
 song
-|id|name|artist|album|
+|id|name|artist|album|path|
 artist
 |id|name|
 album
@@ -27,6 +27,7 @@ type Song struct {
 	name   string
 	artist sql.NullString
 	album  string
+    path string
 }
 
 type Artist struct {
