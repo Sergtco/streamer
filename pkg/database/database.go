@@ -12,6 +12,7 @@ album
 
 import (
 	"database/sql"
+	"errors"
 	"os"
 	"strings"
 
@@ -50,7 +51,7 @@ func initDatabase(dataBasePath string) error {
 	}
 	var err error
 	database, err = sql.Open("sqlite3", dataBasePath)
-    defer database.Close()
+    // defer database.Close()
     data, err := os.ReadFile("./migrations.sql")
     if err != nil {
         return err
@@ -69,20 +70,55 @@ Returns the row with the given id of song.
 
 	`id` - integer id of song
 */
-func getSong(id int) {
+func getSong(id int) (Song, error) {
+    var song Song
+    statement, err := database.Prepare("SELECT id, name, artist, album, path FROM songs WHERE id = ?")
+    if err != nil {
+        return song, err
+    }
+    defer statement.Close()
+
+    err = statement.QueryRow(id).Scan(&song.id, &song.name, &song.artist, &song.album, &song.path)
+    if err != nil {
+        return song, err
+    }
+
+    return song, nil
 }
 
 /*
 Returns all rows with songs.
 */
-func getAll() {
+func getAll() ([]Song, error) {
+    rows, err := database.Query("SELECT id, name, artist, album, path FROM songs")
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var songs []Song
+    for rows.Next() {
+        var song Song
+        // it's better to validate artist field later (on client, or while transfering)
+        err := rows.Scan(&song.id, &song.name, &song.artist, &song.album, &song.path)
+        if err != nil {
+            return nil, err
+        }
+        songs = append(songs, song)
+    }
+    return songs, nil
 }
 
 /*
 Returns all rows with specific artist.
 `artist` - string of artist's name.
 */
-func getByArtist(artist string) {
+func getByArtist(artist string) ([]Song, error) {
+    if artist == "Unknown" {
+        return nil, errors.New("No such artist")
+    }
+    // TODO
+    return nil, nil
 }
 
 /*
