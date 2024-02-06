@@ -70,13 +70,68 @@ Returns the row with the given id of song.
 
 	`id` - integer id of song
 */
-func getSong(id int) {
+func getSong(id int) (Song, error) {
+    var song Song
+    statement, err := database.Prepare("SELECT id, name, artist, album, path FROM songs WHERE id = ?")
+    if err != nil {
+        return song, err
+    }
+    defer statement.Close()
+
+    err = statement.QueryRow(id).Scan(&song.id, &song.name, &song.artist, &song.album, &song.path)
+    if err != nil {
+        return song, err
+    }
+
+    return song, nil
+}
+
+/*
+Returns the row with the given id of artist.
+
+	`id` - integer id of artist. 
+*/
+func getArtist(id int) (Artist, error) {
+    var artist Artist
+    statement, err := database.Prepare("SELECT id, name FROM artists WHERE id = ?")
+    if err != nil {
+        return artist, err
+    }
+    defer statement.Close()
+
+    err = statement.QueryRow(id).Scan(&artist.id, &artist.name)
+    if err != nil {
+        return artist, err
+    }
+
+    return artist, nil
+}
+
+/*
+Returns the row with the given id of album.
+
+	`id` - integer id of album. 
+*/
+func getAlbum(id int) (Album, error) {
+    var album Album
+    statement, err := database.Prepare("SELECT id, name, artist FROM albums WHERE id = ?")
+    if err != nil {
+        return album, err
+    }
+    defer statement.Close()
+
+    err = statement.QueryRow(id).Scan(&album.id, &album.name, &album.artist)
+    if err != nil {
+        return album, err
+    }
+
+    return album, nil
 }
 
 /*
 Returns all rows with songs.
 */
-func getAll() ([]Song, error) {
+func getAllSongs() ([]Song, error) {
     rows, err := database.Query("SELECT id, name, artist, album, path FROM songs")
     if err != nil {
         return nil, err
@@ -104,7 +159,7 @@ func getByArtist(artist string) ([]Song, error) {
     if artist == "Unknown" {
         return nil, errors.New("No such artist")
     }
-    // TODO
+
     return nil, nil
 }
 
