@@ -39,8 +39,13 @@ func generateHLS(songId string) error {
     if err != nil {
         return fmt.Errorf("Failed to create hls directory")
     }
+<<<<<<< HEAD
 	inputFile := filepath.Join(CataloguePath, songId+".mp3")
 	outputM3U8 := filepath.Join(outputPath+songId+"/", songId+".m3u8")
+=======
+	inputFile := filepath.Join(CataloguePath, songName+".mp3")
+	outputM3U8 := filepath.Join(outputPath+songName+"/", songName+".m3u8")
+>>>>>>> dbImpl
 
 	cmd := exec.Command("ffmpeg",
 		"-i", inputFile,
