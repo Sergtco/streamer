@@ -15,7 +15,7 @@ import (
 	"errors"
 	"os"
 	"strings"
-
+    "stream/pkg"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -23,24 +23,6 @@ const dataBasePath = "./database.db" // database with music info
 
 var database *sql.DB
 
-type Song struct {
-	id     int
-	name   string
-	artist sql.NullString
-	album  string
-    path string
-}
-
-type Artist struct {
-	id   int
-	name string
-}
-type Album struct {
-	id     int
-	name   string
-	artist string
-	cover  string
-}
 
 /*
 Function that initializes the database.
@@ -70,15 +52,15 @@ Returns the row with the given id of song.
 
 	`id` - integer id of song
 */
-func getSong(id int) (Song, error) {
-    var song Song
+func getSong(id int) (pkg.Song, error) {
+    var song pkg.Song
     statement, err := database.Prepare("SELECT id, name, artist, album, path FROM songs WHERE id = ?")
     if err != nil {
         return song, err
     }
     defer statement.Close()
 
-    err = statement.QueryRow(id).Scan(&song.id, &song.name, &song.artist, &song.album, &song.path)
+    err = statement.QueryRow(id).Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Path)
     if err != nil {
         return song, err
     }
@@ -91,15 +73,15 @@ Returns the row with the given id of artist.
 
 	`id` - integer id of artist. 
 */
-func getArtist(id int) (Artist, error) {
-    var artist Artist
+func getArtist(id int) (pkg.Artist, error) {
+    var artist pkg.Artist
     statement, err := database.Prepare("SELECT id, name FROM artists WHERE id = ?")
     if err != nil {
         return artist, err
     }
     defer statement.Close()
 
-    err = statement.QueryRow(id).Scan(&artist.id, &artist.name)
+    err = statement.QueryRow(id).Scan(&artist.Id, &artist.Name)
     if err != nil {
         return artist, err
     }
@@ -112,15 +94,15 @@ Returns the row with the given id of album.
 
 	`id` - integer id of album. 
 */
-func getAlbum(id int) (Album, error) {
-    var album Album
+func getAlbum(id int) (pkg.Album, error) {
+    var album pkg.Album
     statement, err := database.Prepare("SELECT id, name, artist FROM albums WHERE id = ?")
     if err != nil {
         return album, err
     }
     defer statement.Close()
 
-    err = statement.QueryRow(id).Scan(&album.id, &album.name, &album.artist)
+    err = statement.QueryRow(id).Scan(&album.Id, &album.Name, &album.Artist)
     if err != nil {
         return album, err
     }
@@ -131,18 +113,18 @@ func getAlbum(id int) (Album, error) {
 /*
 Returns all rows with songs.
 */
-func getAllSongs() ([]Song, error) {
+func getAllSongs() ([]pkg.Song, error) {
     rows, err := database.Query("SELECT id, name, artist, album, path FROM songs")
     if err != nil {
         return nil, err
     }
     defer rows.Close()
 
-    var songs []Song
+    var songs []pkg.Song
     for rows.Next() {
-        var song Song
+        var song pkg.Song
         // it's better to validate artist field later (on client, or while transfering)
-        err := rows.Scan(&song.id, &song.name, &song.artist, &song.album, &song.path)
+        err := rows.Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Path)
         if err != nil {
             return nil, err
         }
@@ -155,7 +137,7 @@ func getAllSongs() ([]Song, error) {
 Returns all rows with specific artist.
 `artist` - string of artist's name.
 */
-func getByArtist(artist string) ([]Song, error) {
+func getByArtist(artist string) ([]pkg.Song, error) {
     if artist == "Unknown" {
         return nil, errors.New("No such artist")
     }

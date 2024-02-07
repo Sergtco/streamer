@@ -33,7 +33,7 @@ func generateHLS(songName string) error {
     if err != nil {
         return fmt.Errorf("Failed to create hls directory")
     }
-	inputFile := filepath.Join(cataloguePath, songName+".mp3")
+	inputFile := filepath.Join(CataloguePath, songName+".mp3")
 	outputM3U8 := filepath.Join(outputPath+songName+"/", songName+".m3u8")
 
 	cmd := exec.Command("ffmpeg",
