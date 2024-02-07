@@ -1,13 +1,19 @@
 package pkg
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 )
+
+type Response struct {
+    Message string `json:"message"`
+}
 
 
 // To access the song url should look like: http://localhost:8080/get?song=song_id
@@ -66,4 +72,69 @@ func ServeTS(w http.ResponseWriter, r *http.Request) {
 	songId := r.URL.Query().Get("song")
     segmentFilename := strings.TrimPrefix(r.URL.Path, "/segments/")
 	http.ServeFile(w, r, outputPath+songId+"/"+segmentFilename)
+}
+
+
+// Handler for uploading song
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
+    err := r.ParseMultipartForm(10 << 20) // 10 MB limit
+    if err != nil {
+        http.Error(w, "Unable to parse form", http.StatusBadRequest)
+        return
+    }
+
+    file, handler, err := r.FormFile("song")
+    if err != nil {
+        http.Error(w, "Error retrieving file", http.StatusBadRequest)
+        return
+    }
+    defer file.Close()
+
+    newFile, err := os.Create(cataloguePath + handler.Filename)
+    if err != nil {
+        http.Error(w, "Error creating file", http.StatusInternalServerError)
+        return
+    }
+    defer newFile.Close()
+
+    _, err = io.Copy(newFile, file)
+    if err != nil {
+        http.Error(w, "Error copying file", http.StatusInternalServerError)
+        return
+    }
+
+    response := Response{ Message: "Song uploaded successfully" }
+    jsonResponse, err := json.Marshal(response)
+    if err != nil {
+        http.Error(w, "Error encoding JSON response", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    w.Write(jsonResponse)
+}
+
+// Handler for deleting song
+func DeleteHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodDelete {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
+
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        http.Error(w, "Error reading request body", http.StatusInternalServerError)
+    }
+
+    songPath := string(body)
+    err = os.Remove(cataloguePath + songPath)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte(`{"message: Song deleted"}`))
 }
