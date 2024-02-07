@@ -39,7 +39,7 @@ func generateHLS(songId string) error {
     if err != nil {
         return fmt.Errorf("Failed to create hls directory")
     }
-	inputFile := filepath.Join(cataloguePath, songId+".mp3")
+	inputFile := filepath.Join(CataloguePath, songId+".mp3")
 	outputM3U8 := filepath.Join(outputPath+songId+"/", songId+".m3u8")
 
 	cmd := exec.Command("ffmpeg",
@@ -75,7 +75,11 @@ func ServeTS(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// Handler for uploading song
+/*
+Handler for uploading song
+
+It supports only .mp3 file format (for a while)
+*/
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
     err := r.ParseMultipartForm(10 << 20) // 10 MB limit
     if err != nil {
@@ -90,7 +94,12 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     }
     defer file.Close()
 
-    newFile, err := os.Create(cataloguePath + handler.Filename)
+    if !isMusic(handler.Filename) {
+        http.Error(w, "Invalid file", http.StatusBadRequest)
+        return
+    }
+
+    newFile, err := os.Create(CataloguePath + handler.Filename)
     if err != nil {
         http.Error(w, "Error creating file", http.StatusInternalServerError)
         return
@@ -115,7 +124,11 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     w.Write(jsonResponse)
 }
 
-// Handler for deleting song
+/* 
+Handler for deleting song
+
+Handler won't accept insecure paths
+*/
 func DeleteHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodDelete {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -128,7 +141,11 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     songPath := string(body)
-    err = os.Remove(cataloguePath + songPath)
+    if !isPathSecure(songPath) {
+        http.Error(w, "Invalid song path", http.StatusBadRequest)
+        return
+    }
+    err = os.Remove(CataloguePath + songPath)
     if err != nil {
         http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
         return
@@ -137,4 +154,34 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     w.Write([]byte(`{"message: Song deleted"}`))
+}
+
+/*
+Checks if the provided path is considered secure based on specific criteria.
+
+The function returns true if the path is deemed secure, and false otherwise.
+*/ 
+func isPathSecure(path string) bool {
+    if strings.Contains(path, "..") {
+        return false
+    }
+    if path[0] == '/' {
+        return false
+    }
+    if !strings.Contains(path, "catalogue") {
+        return false
+    }
+    return true
+}
+
+/*
+Checks if file is music file.  
+`name` - filename
+*/
+func isMusic(name string) bool {
+    splitted := strings.Split(name, ".")
+    if splitted[len(splitted)-1] == "mp3" {
+        return true
+    }
+    return false
 }
