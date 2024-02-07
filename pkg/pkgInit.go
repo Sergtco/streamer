@@ -6,13 +6,13 @@ import (
 )
 
 const (
-	cataloguePath = "./catalogue/" // mp3 file storage
+	CataloguePath = "./catalogue/" // mp3 file storage
 	outputPath    = "./hls/" // directory for segmented music
 )
 
 // func that calls when package imported
 func init() {
-    err := os.Mkdir(cataloguePath, os.ModePerm)
+    err := os.Mkdir(CataloguePath, os.ModePerm)
     if err != nil {
         fmt.Println("Catalogue already exists")
     }
