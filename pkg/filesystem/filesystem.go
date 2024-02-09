@@ -5,20 +5,25 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"stream/pkg"
 	"strings"
-
+    "stream/pkg/structs"
 	"github.com/dhowden/tag"
 )
+
+var CataloguePath string
+func init() {
+    CataloguePath = os.Getenv("CATALOGUE")
+    fmt.Println(CataloguePath)
+}
 
 /*
 Scans music directory for music files and returns slice with Song structure
 */
-func ScanFs() ([]pkg.Song, error) {
-	path := pkg.CataloguePath
+func ScanFs() ([]structs.Song, error) {
+	path := CataloguePath
 	musicPaths := make([]string, 0)
 	if err := getAllFilePaths(path, &musicPaths); err != nil {
-		return nil, fmt.Errorf("Unable to get filepaths: %e", err)
+		return nil, fmt.Errorf("Unable to get filepaths: %v", err)
 	}
 	songs, err := convertToSongs(musicPaths)
 	if err != nil {
@@ -55,8 +60,8 @@ func isMusic(name string) bool {
 	return false
 }
 
-func convertToSongs(paths []string) ([]pkg.Song, error) {
-	output := make([]pkg.Song, 0)
+func convertToSongs(paths []string) ([]structs.Song, error) {
+	output := make([]structs.Song, 0)
 	for _, path := range paths {
 		file, err := os.Open(path)
 		if err != nil {
@@ -65,7 +70,7 @@ func convertToSongs(paths []string) ([]pkg.Song, error) {
 		data, err := tag.ReadFrom(file)
 		if err != nil {
             splitted := strings.Split(path, "/")
-            output = append(output, pkg.Song{
+            output = append(output, structs.Song{
                 Id: -1, 
                 Name: splitted[len(splitted)-1],
                 Artist: "Unknown",
@@ -75,7 +80,7 @@ func convertToSongs(paths []string) ([]pkg.Song, error) {
 			log.Print(fmt.Errorf("Error reading file metadata: %s\n", path))
             continue
 		}
-		output = append(output, pkg.Song{
+		output = append(output, structs.Song{
 			Id:     -1,
 			Name:   data.Title(),
 			Artist: data.Artist(),

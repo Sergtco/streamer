@@ -3,8 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"stream/config"
 	"stream/pkg"
 )
+
+func init() {
+    config.InitEnv()
+}
 
 func main() {
 	http.HandleFunc("/get", pkg.ServeSong)

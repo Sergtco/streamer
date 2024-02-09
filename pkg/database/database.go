@@ -15,15 +15,19 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"stream/pkg"
 	"stream/pkg/filesystem"
+    "stream/pkg/structs"
 	"strings"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const dataBasePath = "./database.db" // database with music info
+var DataBasePath string
+
+func init() {
+    DataBasePath = os.Getenv("DB_PATH")
+}
 
 var Database *sql.DB
 var mutex *sync.Mutex
@@ -31,21 +35,22 @@ var mutex *sync.Mutex
 /*
 For reinitialization of database
 */
-func ReinitDatabase(dataBasePath string) error {
-    os.Remove(dataBasePath)
-    err := InitDatabase(dataBasePath)
-    return err
+func ReinitDatabase() error {
+	os.Remove(DataBasePath)
+	err := InitDatabase()
+	return err
 }
+
 /*
 Function that initializes the database.
 */
-func InitDatabase(dataBasePath string) error {
-	if _, err := os.Stat(dataBasePath); os.IsNotExist(err) {
-		os.Create(dataBasePath)
+func InitDatabase() error {
+	if _, err := os.Stat(DataBasePath); os.IsNotExist(err) {
+		os.Create(DataBasePath)
 	}
 	var err error
-	Database, err = sql.Open("sqlite3", dataBasePath)
-	data, err := os.ReadFile("./migrations.sql")
+	Database, err = sql.Open("sqlite3", DataBasePath)
+	data, err := os.ReadFile("./config/migrations.sql")
 	if err != nil {
 		return err
 	}
@@ -55,18 +60,18 @@ func InitDatabase(dataBasePath string) error {
 			return err
 		}
 	}
-    songs, err := filesystem.ScanFs()
-    if err != nil {
-        return err
-    }
-    err = fillDatabase(songs)
-    if err != nil {
-        return err
-    }
+	songs, err := filesystem.ScanFs()
+	if err != nil {
+		return err
+	}
+	err = fillDatabase(songs)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func fillDatabase(songs []pkg.Song) error {
+func fillDatabase(songs []structs.Song) error {
 	if Database == nil {
 		return fmt.Errorf("Database is closed.")
 	}
@@ -74,7 +79,7 @@ func fillDatabase(songs []pkg.Song) error {
 	for _, song := range songs {
 		Database.Exec(querySongs, song.Name, song.Artist, song.Album, song.Path)
 	}
-    return nil
+	return nil
 }
 
 /*
@@ -82,8 +87,8 @@ Returns the row with the given id of song.
 
 	`id` - integer id of song
 */
-func getSong(id int) (pkg.Song, error) {
-	var song pkg.Song
+func getSong(id int) (structs.Song, error) {
+	var song structs.Song
 	statement, err := Database.Prepare("SELECT id, name, artist, album, path FROM songs WHERE id = ?;")
 	if err != nil {
 		return song, err
@@ -103,8 +108,8 @@ Returns the row with the given id of artist.
 
 	`id` - integer id of artist.
 */
-func getArtist(id int) (pkg.Artist, error) {
-	var artist pkg.Artist
+func getArtist(id int) (structs.Artist, error) {
+	var artist structs.Artist
 	statement, err := Database.Prepare("SELECT id, name FROM artists WHERE id = ?;")
 	if err != nil {
 		return artist, err
@@ -124,8 +129,8 @@ Returns the row with the given id of album.
 
 	`id` - integer id of album.
 */
-func getAlbum(id int) (pkg.Album, error) {
-	var album pkg.Album
+func getAlbum(id int) (structs.Album, error) {
+	var album structs.Album
 	statement, err := Database.Prepare("SELECT id, name, artist FROM albums WHERE id = ?;")
 	if err != nil {
 		return album, err
@@ -143,16 +148,16 @@ func getAlbum(id int) (pkg.Album, error) {
 /*
 Returns all rows with songs.
 */
-func getAllSongs() ([]pkg.Song, error) {
+func getAllSongs() ([]structs.Song, error) {
 	rows, err := Database.Query("SELECT id, name, artist, album, path FROM songs;")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var songs []pkg.Song
+	var songs []structs.Song
 	for rows.Next() {
-		var song pkg.Song
+		var song structs.Song
 		// it's better to validate artist field later (on client, or while transfering)
 		err := rows.Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Path)
 		if err != nil {
@@ -167,7 +172,7 @@ func getAllSongs() ([]pkg.Song, error) {
 Returns all rows with specific artist.
 `artist` - string of artist's name.
 */
-func getByArtist(artist string) ([]pkg.Song, error) {
+func getByArtist(artist string) ([]structs.Song, error) {
 	if artist == "Unknown" {
 		return nil, errors.New("No such artist")
 	}

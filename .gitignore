@@ -2,3 +2,4 @@ main
 catalogue/*
 hls/*
 database.db
+config

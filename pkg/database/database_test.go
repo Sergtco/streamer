@@ -9,7 +9,7 @@ import (
 
 func TestInitDatabase(t *testing.T) {
     s := time.Now()
-    err := ReinitDatabase(dataBasePath)
+    err := ReinitDatabase()
     e := time.Now()
     fmt.Println(e.UnixMilli() - s.UnixMilli())
     if err != nil {
