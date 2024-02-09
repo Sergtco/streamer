@@ -8,6 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"stream/pkg/database"
+	"stream/pkg/filesystem"
 	"strings"
 )
 
@@ -62,7 +65,7 @@ func generateHLS(songId string) error {
 	return nil
 }
 
-// To access the segment of song url should look like: http://localhost:8080/segments/segment_xxx.ts?song=song_id
+// To access a segment of song url should look like: http://localhost:8080/segments/segment_xxx.ts?song=song_id
 //
 // 'xxx' - the actual segment number.
 // 'song_id' - the actual id of song to stream.
@@ -72,6 +75,28 @@ func ServeTS(w http.ResponseWriter, r *http.Request) {
 	songId := r.URL.Query().Get("song")
     segmentFilename := strings.TrimPrefix(r.URL.Path, "/segments/")
 	http.ServeFile(w, r, outputPath+songId+"/"+segmentFilename)
+}
+
+// Handler to get song data by id
+//
+// To get a song, url should look like: http://localhost:8080/getSongData?song=song_id
+//
+// 'song_id' - the actual id of song.
+//
+// Server will response with JSON.
+func GetSongData(w http.ResponseWriter, r *http.Request) {
+	songId, err := strconv.Atoi(r.URL.Query().Get("song"))
+    if err != nil {
+        http.Error(w, "Invalid id", http.StatusBadRequest)
+        return
+    }
+
+    song, err := database.GetSong(songId)
+    json, err := json.Marshal(song)
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    w.Write(json)
 }
 
 
@@ -112,6 +137,12 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // TODO: do not rebuilding database!
+    err = database.ReinitDatabase()
+    if err != nil {
+        http.Error(w, "Eroor rebuilding database", http.StatusInternalServerError)
+    }
+
     response := Response{ Message: "Song uploaded successfully" }
     jsonResponse, err := json.Marshal(response)
     if err != nil {
@@ -125,9 +156,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 /* 
-Handler for deleting song
-
-Handler won't accept insecure paths
+Handler for deleting song by id
 */
 func DeleteHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodDelete {
@@ -135,22 +164,24 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    body, err := io.ReadAll(r.Body)
+	songId, err := strconv.Atoi(r.URL.Query().Get("song"))
     if err != nil {
-        http.Error(w, "Error reading request body", http.StatusInternalServerError)
-    }
-
-    songPath := string(body)
-    if !isPathSecure(songPath) {
-        http.Error(w, "Invalid song path", http.StatusBadRequest)
+        http.Error(w, "Invalid id", http.StatusBadRequest)
         return
     }
-    err = os.Remove(CataloguePath + songPath)
+
+    song, err := database.DeleteSong(songId) 
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Can't find song by id: %v", err), http.StatusBadRequest)
+        return
+    }
+
+    err = filesystem.DeleteFile("./" + song.Path)
     if err != nil {
         http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
         return
     }
-
+    
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     w.Write([]byte(`{"message: Song deleted"}`))

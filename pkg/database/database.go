@@ -12,7 +12,6 @@ album
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"os"
 	"stream/pkg/filesystem"
@@ -23,19 +22,18 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var DataBasePath string
-
-func init() {
-    DataBasePath = os.Getenv("DB_PATH")
-}
+var DataBasePath = os.Getenv("DB_PATH")
 
 var Database *sql.DB
-var mutex *sync.Mutex
+var mutex sync.Mutex
 
 /*
 For reinitialization of database
 */
 func ReinitDatabase() error {
+    mutex.Lock()
+    defer mutex.Unlock()
+
 	os.Remove(DataBasePath)
 	err := InitDatabase()
 	return err
@@ -87,7 +85,7 @@ Returns the row with the given id of song.
 
 	`id` - integer id of song
 */
-func getSong(id int) (structs.Song, error) {
+func GetSong(id int) (structs.Song, error) {
 	var song structs.Song
 	statement, err := Database.Prepare("SELECT id, name, artist, album, path FROM songs WHERE id = ?;")
 	if err != nil {
@@ -172,12 +170,27 @@ func getAllSongs() ([]structs.Song, error) {
 Returns all rows with specific artist.
 `artist` - string of artist's name.
 */
-func getByArtist(artist string) ([]structs.Song, error) {
-	if artist == "Unknown" {
-		return nil, errors.New("No such artist")
-	}
+func getByArtist(id int) ([]structs.Song, error) {
+    artist, err := getArtist(id)
+    if err != nil {
+        return nil, err
+    }
 
-	return nil, nil
+    var songs []structs.Song = make([]structs.Song, 0)
+    rows, err := Database.Query("SELECT id, name, artist, album, path FROM songs WHERE artist = ?", artist.Name)
+    if err != nil {
+        return nil, err
+    }
+    for rows.Next() {
+		var song structs.Song
+		// it's better to validate artist field later (on client, or while transfering)
+		err := rows.Scan(&song.Id, &song.Name, &song.Artist, &song.Album, &song.Path)
+		if err != nil {
+			return nil, err
+		}
+		songs = append(songs, song)
+	}
+    return songs, nil
 }
 
 /*
@@ -185,4 +198,18 @@ Returns all rows with specific album.
 `album` - string of album's name.
 */
 func getByAlbum(album string) {
+}
+
+func DeleteSong(id int) (structs.Song, error) {
+    song, err := GetSong(id)
+    if err != nil {
+        return song, err
+    }
+    mutex.Lock()
+    defer mutex.Unlock()
+    _, err = Database.Exec("DELETE FROM songs WHERE id = ?", id)
+    if err != nil {
+        return song, err
+    }
+    return song, nil
 }

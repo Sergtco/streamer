@@ -10,11 +10,7 @@ import (
 	"github.com/dhowden/tag"
 )
 
-var CataloguePath string
-func init() {
-    CataloguePath = os.Getenv("CATALOGUE")
-    fmt.Println(CataloguePath)
-}
+var CataloguePath = os.Getenv("CATALOGUE")
 
 /*
 Scans music directory for music files and returns slice with Song structure
