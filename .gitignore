@@ -1,5 +1,6 @@
-main
-catalogue/*
-hls/*
-database.db
-config
+server/main
+server/catalogue/*
+server/hls/*
+server/database.db
+server/config
+client/Cargo.lock
