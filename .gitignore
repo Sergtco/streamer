@@ -2,6 +2,6 @@ server/main
 server/catalogue/*
 server/hls/*
 server/database.db
-server/config
+# server/config IDK why this was ignored
 client/Cargo.lock
 client/target
