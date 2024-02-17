@@ -33,6 +33,9 @@ func ServeSong(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+    w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 
 	http.ServeFile(w, r, outputPath+songId+"/"+songId+".m3u8")
 }
