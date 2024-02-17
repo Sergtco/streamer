@@ -57,6 +57,7 @@ func generateHLS(songId string) error {
 		"-hls_playlist_type", "event",
 		"-hls_list_size", "0",
 		"-f", "hls",
+        "-hls_base_url", "/segments/?song=" + songId + "&" + "file=",
 		outputM3U8,
 	)
 
@@ -76,8 +77,11 @@ func generateHLS(songId string) error {
 // Server will response with .ts file.
 func ServeTS(w http.ResponseWriter, r *http.Request) {
 	songId := r.URL.Query().Get("song")
-    segmentFilename := strings.TrimPrefix(r.URL.Path, "/segments/")
-	http.ServeFile(w, r, outputPath+songId+"/"+segmentFilename)
+	fileName := r.URL.Query().Get("file")
+    fmt.Println(r.URL.Query().Encode())
+    fmt.Println(r.URL.Path)
+    fmt.Println(fileName)
+	http.ServeFile(w, r, outputPath+songId+"/"+fileName)
 }
 
 // Handler to get song data by id
