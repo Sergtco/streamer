@@ -146,7 +146,7 @@ func getAlbum(id int) (structs.Album, error) {
 /*
 Returns all rows with songs.
 */
-func getAllSongs() ([]structs.Song, error) {
+func GetAllSongs() ([]structs.Song, error) {
 	rows, err := Database.Query("SELECT id, name, artist, album, path FROM songs;")
 	if err != nil {
 		return nil, err

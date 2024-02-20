@@ -1,13 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HLS Player</title>
 </head>
+
 <body>
-    <audio controls width="640" height="360">
-        <source src="http://localhost:8080/get?song=1" type="application/x-mpegURL">
+    <script>
+        function SongList() {
+            const myList = document.getElementById("Songs");
+            const myRequest = new Request("http://localhost:8080/fetch");
+            while (myList.firstChild) {
+                myList.removeChild(myList.firstChild);
+            }
+
+
+            fetch(myRequest)
+                .then((response) => response.json())
+                .then((data) => {
+                    for (const song of data) {
+                        const listItem = document.createElement("li");
+                        listItem.appendChild(document.createElement("strong")).textContent =
+                            song.id;
+                        listItem.append(": ")
+                        listItem.appendChild(document.createElement("strong")).textContent =
+                            song.name;
+                        listItem.append(" | ")
+                        listItem.appendChild(document.createElement("strong")).textContent =
+                            song.album;
+                        listItem.append(" | ")
+                        listItem.appendChild(document.createElement("strong")).textContent =
+                            song.artist;
+                        myList.appendChild(listItem);
+                    }
+                })
+                .catch(console.error);
+
+        }
+    </script>
+    <button type="button" onclick="SongList()">Get songs</button>
+    <ul id="Songs">
+    </ul>
+
+    <audio controls crossorigin width="640" height="360" id="player">
+        <source src="/music/song.mp3" type="audio/mpeg">
     </audio>
 </body>
+
 </html>

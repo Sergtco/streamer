@@ -9,6 +9,7 @@ import (
 
 func main() {
 	http.HandleFunc("/get", pkg.ServeSong)
+    http.HandleFunc("/fetch", pkg.FetchDB)
 	http.HandleFunc("/segments/", pkg.ServeTS)
     http.HandleFunc("/getSongData", pkg.GetSongData)
     http.HandleFunc("/deleteSong", pkg.DeleteHandler)
