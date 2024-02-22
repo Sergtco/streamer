@@ -44,9 +44,30 @@
     <ul id="Songs">
     </ul>
 
-    <audio controls crossorigin width="640" height="360" id="player">
-        <source src="/music/song.mp3" type="audio/mpeg">
-    </audio>
-</body>
+    <audio controls width="640" height="360" id="player"></audio>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var audio = document.getElementById('player');
 
+            if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+                // native HLS support like Safari
+                audio.src = 'http://localhost:8080/get?song=1';
+                audio.type = 'application/x-mpegURL';
+            } else {
+                // Load hls.js only if not supported natively
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+                script.onload = function () {
+                    var hls = new Hls();
+                    hls.loadSource('http://localhost:8080/get?song=1');
+                    hls.attachMedia(audio);
+                };
+                script.onerror = function () {
+                    console.error('Failed to load hls.js');
+                };
+                document.head.appendChild(script);
+            }
+        });
+    </script>
+</body>
 </html>

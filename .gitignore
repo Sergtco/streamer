@@ -3,5 +3,3 @@ server/catalogue/*
 server/hls/*
 server/database.db
 # server/config IDK why this was ignored
-client/Cargo.lock
-client/target
