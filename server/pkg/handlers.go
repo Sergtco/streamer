@@ -56,18 +56,37 @@ func FetchDB(w http.ResponseWriter, r *http.Request) {
 
 
 func generateHLS(songId string) error {
-	err := os.MkdirAll(outputPath+songId, os.ModePerm)
+    m3u8Path := filepath.Join(outputPath, songId, songId+".m3u8")
+    if _, err := os.Stat(m3u8Path); err == nil {
+        // .m3u8 file already exists, return without generating HLS
+        return nil
+    }
+
+    tsPattern := filepath.Join(outputPath, songId, "segment_*.ts")
+    matches, err := filepath.Glob(tsPattern)
+    if err != nil {
+        return fmt.Errorf("Failed to check existing TS files: %w", err)
+    }
+    if len(matches) > 0 {
+        // TS files already exist, return without generating HLS
+        return nil
+    }
+
+	err = os.MkdirAll(outputPath+songId, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("Failed to create hls directory")
 	}
+
 	id, err := strconv.Atoi(songId)
 	if err != nil {
 		return fmt.Errorf("Failed to read song id.")
 	}
+
 	song, err := database.GetSong(id)
 	if err != nil {
 		return fmt.Errorf("Failed to get song.")
 	}
+
 	inputFile := song.Path
 	outputM3U8 := filepath.Join(outputPath+songId+"/", songId+".m3u8")
 
