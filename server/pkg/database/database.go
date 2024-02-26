@@ -35,6 +35,7 @@ func ReinitDatabase() error {
     defer mutex.Unlock()
 
 	os.Remove(DataBasePath)
+    os.Remove(os.Getenv("HLS") + "*") // to prevent id collisions (TODO: more efficient way)
 	err := InitDatabase()
 	return err
 }
