@@ -5,12 +5,15 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
+	"stream/pkg/structs"
 	"strings"
-    "stream/pkg/structs"
+
 	"github.com/dhowden/tag"
 )
 
 var CataloguePath = os.Getenv("CATALOGUE")
+var SupportedFormats = []string{"mp3", "flac", "wav"}
 
 /*
 Scans music directory for music files and returns slice with Song structure
@@ -46,11 +49,12 @@ func getAllFilePaths(root string, output *[]string) error {
 
 /*
 Checks if file is music file.
-`name` - filename
+
+It checks supported formats from `SupportedFormats` variable.
 */
-func isMusic(name string) bool {
-	splitted := strings.Split(name, ".")
-	if splitted[len(splitted)-1] == "mp3" {
+func isMusic(filename string) bool {
+	splitted := strings.Split(filename, ".")
+	if format := strings.ToLower(splitted[len(splitted)-1]); slices.Contains(SupportedFormats, format) {
 		return true
 	}
 	return false
@@ -65,16 +69,16 @@ func convertToSongs(paths []string) ([]structs.Song, error) {
 		}
 		data, err := tag.ReadFrom(file)
 		if err != nil {
-            splitted := strings.Split(path, "/")
-            output = append(output, structs.Song{
-                Id: -1, 
-                Name: splitted[len(splitted)-1],
-                Artist: "Unknown",
-                Album: splitted[len(splitted)-1],
-                Path: path,
-            })
+			splitted := strings.Split(path, "/")
+			output = append(output, structs.Song{
+				Id:     -1,
+				Name:   splitted[len(splitted)-1],
+				Artist: "Unknown",
+				Album:  splitted[len(splitted)-1],
+				Path:   path,
+			})
 			log.Print(fmt.Errorf("Error reading file metadata: %s\n", path))
-            continue
+			continue
 		}
 		output = append(output, structs.Song{
 			Id:     -1,
