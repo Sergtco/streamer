@@ -13,7 +13,7 @@ func main() {
 	http.HandleFunc("/segments/", pkg.ServeTS)
 	http.HandleFunc("/getSongData", pkg.GetSongData)
 	http.HandleFunc("/deleteSong", pkg.DeleteHandler)
-	fmt.Printf("Listening on %s:%s", addr, port)
+	fmt.Printf("Listening on %s:%s\n", addr, port)
 	if http.ListenAndServe(fmt.Sprintf("%s:%s", addr, port), nil) == nil {
 		fmt.Println("Exited")
 	}
