@@ -9,23 +9,26 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"stream/pkg/database"
 	"stream/pkg/filesystem"
 	"strings"
 )
 
+var SupportedFormats = []string{"mp3", "flac", "wav"}
+
 type Response struct {
 	Message string `json:"message"`
 }
 
-// To access the song url should look like: http://localhost:8080/get?song=song_id
+// To access the song url should look like: http://localhost:8080/get/song_id
 //
 // 'song_id' - the id of song (TODO)
 //
-// Server will response with m3u8 file.
+// Server will respond with m3u8 file.
 func ServeSong(w http.ResponseWriter, r *http.Request) {
-	songId := r.URL.Query().Get("song")
+	songId := r.PathValue("id")
 
 	err := generateHLS(songId)
 	if err != nil {
@@ -54,23 +57,22 @@ func FetchDB(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-
 func generateHLS(songId string) error {
-    m3u8Path := filepath.Join(outputPath, songId, songId+".m3u8")
-    if _, err := os.Stat(m3u8Path); err == nil {
-        // .m3u8 file already exists, return without generating HLS
-        return nil
-    }
+	m3u8Path := filepath.Join(outputPath, songId, songId+".m3u8")
+	if _, err := os.Stat(m3u8Path); err == nil {
+		// .m3u8 file already exists, return without generating HLS
+		return nil
+	}
 
-    tsPattern := filepath.Join(outputPath, songId, "segment_*.ts")
-    matches, err := filepath.Glob(tsPattern)
-    if err != nil {
-        return fmt.Errorf("Failed to check existing TS files: %w", err)
-    }
-    if len(matches) > 0 {
-        // TS files already exist, return without generating HLS
-        return nil
-    }
+	tsPattern := filepath.Join(outputPath, songId, "segment_*.ts")
+	matches, err := filepath.Glob(tsPattern)
+	if err != nil {
+		return fmt.Errorf("Failed to check existing TS files: %w", err)
+	}
+	if len(matches) > 0 {
+		// TS files already exist, return without generating HLS
+		return nil
+	}
 
 	err = os.MkdirAll(outputPath+songId, os.ModePerm)
 	if err != nil {
@@ -99,7 +101,7 @@ func generateHLS(songId string) error {
 		"-hls_playlist_type", "event",
 		"-hls_list_size", "0",
 		"-f", "hls",
-		"-hls_base_url", "/segments/?song="+songId+"&"+"file=",
+		"-hls_base_url", "/segments/"+songId+"/",
 		outputM3U8,
 	)
 
@@ -111,18 +113,16 @@ func generateHLS(songId string) error {
 	return nil
 }
 
-// To access a segment of song url should look like: http://localhost:8080/segments/segment_xxx.ts?song=song_id
+// To access a segment of song url should look like: http://localhost:8080/segments/song_id/segment_xxx.ts
 //
 // 'xxx' - the actual segment number.
 // 'song_id' - the actual id of song to stream.
 //
-// Server will response with .ts file.
+// Server will respond with .ts file.
 func ServeTS(w http.ResponseWriter, r *http.Request) {
-	songId := r.URL.Query().Get("song")
-	fileName := r.URL.Query().Get("file")
-	fmt.Println(r.URL.Query().Encode())
+	songId := r.PathValue("song")
+	fileName := r.PathValue("file")
 	fmt.Println(r.URL.Path)
-	fmt.Println(fileName)
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
@@ -133,13 +133,13 @@ func ServeTS(w http.ResponseWriter, r *http.Request) {
 
 // Handler to get song data by id
 //
-// To get a song, url should look like: http://localhost:8080/getSongData?song=song_id
+// To get a song, url should look like: http://localhost:8080/getSongData/song_id
 //
 // 'song_id' - the actual id of song.
 //
 // Server will response with JSON.
 func GetSongData(w http.ResponseWriter, r *http.Request) {
-	songId, err := strconv.Atoi(r.URL.Query().Get("song"))
+	songId, err := strconv.Atoi(r.PathValue("song"))
 	if err != nil {
 		http.Error(w, "Invalid id", http.StatusBadRequest)
 		return
@@ -212,12 +212,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 Handler for deleting song by id
 */
 func DeleteHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	songId, err := strconv.Atoi(r.URL.Query().Get("song"))
+	songId, err := strconv.Atoi(r.PathValue("song"))
 	if err != nil {
 		http.Error(w, "Invalid id", http.StatusBadRequest)
 		return
@@ -260,11 +255,12 @@ func isPathSecure(path string) bool {
 
 /*
 Checks if file is music file.
-`name` - filename
+
+It checks supported formats from `SupportedFormats` variable.
 */
-func isMusic(name string) bool {
-	splitted := strings.Split(name, ".")
-	if splitted[len(splitted)-1] == "mp3" {
+func isMusic(filename string) bool {
+	splitted := strings.Split(filename, ".")
+	if format := strings.ToLower(splitted[len(splitted)-1]); slices.Contains(SupportedFormats, format) {
 		return true
 	}
 	return false
