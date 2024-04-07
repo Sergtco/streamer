@@ -1,26 +1,32 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"stream/pkg"
+
+	"github.com/gorilla/handlers"
 )
 
 func main() {
-    router := http.NewServeMux()
-    router.HandleFunc("/get/{id}", pkg.ServeSong)
-    router.HandleFunc("/segments/{song}/{file}", pkg.ServeTS)
-    router.HandleFunc("/getSongData/{song}", pkg.GetSongData)
-    router.HandleFunc("DELETE /deleteSong/{song}", pkg.DeleteHandler)
 
-    server := http.Server {
-        Addr: ":8080",
-        Handler: router,
-    }
+	log.SetFlags(log.LstdFlags)
 
-    fmt.Printf("Listening on %s\n", server.Addr)
-    err := server.ListenAndServe()
-    if err != nil {
-        fmt.Printf("Error listening on %s", server.Addr)
-    }
+	router := http.NewServeMux()
+	router.HandleFunc("/get/{id}", pkg.ServeSong)
+	router.HandleFunc("/segments/{song}/{file}", pkg.ServeTS)
+	router.HandleFunc("/getSongData/{song}", pkg.GetSongData)
+	router.HandleFunc("DELETE /deleteSong/{song}", pkg.DeleteHandler)
+
+	server := http.Server{
+		Addr:    ":8080",
+		Handler: handlers.LoggingHandler(os.Stdout, router),
+	}
+
+	log.Printf("Listening on %s \n", server.Addr)
+	err := server.ListenAndServe()
+	if err != nil {
+		log.Fatal("Errror on server %w", err)
+	}
 }

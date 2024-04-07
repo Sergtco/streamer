@@ -32,7 +32,7 @@ func ServeSong(w http.ResponseWriter, r *http.Request) {
 
 	err := generateHLS(songId)
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Println("Error:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -47,7 +47,7 @@ func FetchDB(w http.ResponseWriter, r *http.Request) {
 	songs, err := database.GetAllSongs()
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Print("Unable to get songs: ", err)
+		log.Printf("Unable to get songs: %s \n", err)
 	}
 	res, _ := json.Marshal(songs)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -76,17 +76,17 @@ func generateHLS(songId string) error {
 
 	err = os.MkdirAll(outputPath+songId, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("Failed to create hls directory")
+		return fmt.Errorf("Failed to create hls directory: %w", err)
 	}
 
 	id, err := strconv.Atoi(songId)
 	if err != nil {
-		return fmt.Errorf("Failed to read song id.")
+		return fmt.Errorf("Failed to read song id. %w", err)
 	}
 
 	song, err := database.GetSong(id)
 	if err != nil {
-		return fmt.Errorf("Failed to get song.")
+		return fmt.Errorf("Failed to get song. %w", err)
 	}
 
 	inputFile := song.Path
@@ -122,7 +122,6 @@ func generateHLS(songId string) error {
 func ServeTS(w http.ResponseWriter, r *http.Request) {
 	songId := r.PathValue("song")
 	fileName := r.PathValue("file")
-	fmt.Println(r.URL.Path)
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
@@ -179,6 +178,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	newFile, err := os.Create(CataloguePath + handler.Filename)
 	if err != nil {
+		log.Printf("Error creating file: %s \n", err)
 		http.Error(w, "Error creating file", http.StatusInternalServerError)
 		return
 	}
@@ -186,6 +186,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = io.Copy(newFile, file)
 	if err != nil {
+		log.Printf("Error copying file: %s \n", err)
 		http.Error(w, "Error copying file", http.StatusInternalServerError)
 		return
 	}
@@ -193,12 +194,14 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: do not rebuilding database!
 	err = database.ReinitDatabase()
 	if err != nil {
+		log.Printf("Error rebuilding database: %s", err)
 		http.Error(w, "Eroor rebuilding database", http.StatusInternalServerError)
 	}
 
 	response := Response{Message: "Song uploaded successfully"}
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
+		log.Printf("Could not encode JSON: %s", err)
 		http.Error(w, "Error encoding JSON response", http.StatusInternalServerError)
 		return
 	}
@@ -226,6 +229,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = filesystem.DeleteFile("./" + song.Path)
 	if err != nil {
+		log.Printf("Could not delete file: %s", err)
 		http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
 		return
 	}
