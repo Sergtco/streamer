@@ -13,6 +13,7 @@ album
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"stream/pkg/filesystem"
 	"stream/pkg/structs"
@@ -53,7 +54,7 @@ func InitDatabase() error {
 	if err != nil {
 		return err
 	}
-	for _, query := range strings.Split(string(data), "жопа") {
+	for _, query := range strings.Split(string(data), "/sp") {
 		_, err := Database.Exec(query)
 		if err != nil {
 			return err
@@ -74,9 +75,51 @@ func fillDatabase(songs []structs.Song) error {
 	if Database == nil {
 		return fmt.Errorf("Database is closed.")
 	}
-	querySongs := "INSERT INTO songs (name, artist, album, path) VALUES  (?, ?, ?, ?);"
 	for _, song := range songs {
-		Database.Exec(querySongs, song.Name, song.Artist, song.Album, song.Path)
+		err := insertSong(song)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	return nil
+}
+
+func insertSong(song structs.Song) error {
+	querySongs := "INSERT INTO songs (name, artist_id, album_id, path) VALUES  (?, ?, ?, ?);"
+	insertArtist := "INSERT OR IGNORE INTO artists (name) VALUES (?);"
+	selectArtistId := "SELECT id FROM artists WHERE name = ?;"
+
+	insertAlbum := "INSERT OR IGNORE INTO albums (name, artist_id) VALUES (?, ?);"
+	selectAlbumId := "SELECT id FROM albums WHERE (name, artist_id) = (?, ?)"
+
+	_, err := Database.Exec(insertArtist, song.Artist)
+	if err != nil {
+		log.Println("Error while inserting Artist:", err)
+	}
+	var artId, albId int
+	query, err := Database.Query(selectArtistId, song.Artist)
+	if err != nil {
+		log.Println("Error while selecting artist", err)
+	}
+	query.Next()
+	query.Scan(&artId)
+	query.Close()
+
+	_, err = Database.Exec(insertAlbum, song.Album, artId)
+	if err != nil {
+		log.Println("Error while inserting Album:", err)
+	}
+	query, err = Database.Query(selectAlbumId, song.Album, artId)
+	if err != nil {
+		log.Println("Error while selcting album:", err)
+	}
+	query.Next()
+	query.Scan(&albId)
+	query.Close()
+
+	_, err = Database.Exec(querySongs, song.Name, artId, albId, song.Path)
+	if err != nil {
+		log.Println("ahlo", err)
 	}
 	return nil
 }
