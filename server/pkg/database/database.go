@@ -84,42 +84,56 @@ func fillDatabase(songs []structs.Song) error {
 	return nil
 }
 
-func insertSong(song structs.Song) error {
-	querySongs := "INSERT INTO songs (name, artist_id, album_id, path) VALUES  (?, ?, ?, ?);"
-	insertArtist := "INSERT OR IGNORE INTO artists (name) VALUES (?);"
+func insertArtist(name string) (int, error) {
+	insArtistQuery := "INSERT OR IGNORE INTO artists (name) VALUES (?);"
 	selectArtistId := "SELECT id FROM artists WHERE name = ?;"
 
-	insertAlbum := "INSERT OR IGNORE INTO albums (name, artist_id) VALUES (?, ?);"
-	selectAlbumId := "SELECT id FROM albums WHERE (name, artist_id) = (?, ?)"
-
-	_, err := Database.Exec(insertArtist, song.Artist)
+	_, err := Database.Exec(insArtistQuery, name)
 	if err != nil {
-		log.Println("Error while inserting Artist:", err)
+		return 0, fmt.Errorf("Errror while inserting artist: %s", err)
 	}
-	var artId, albId int
-	query, err := Database.Query(selectArtistId, song.Artist)
+	var artId int
+	query, err := Database.Query(selectArtistId, name)
 	if err != nil {
-		log.Println("Error while selecting artist", err)
+		return 0, fmt.Errorf("Errror opening query: %s", err)
 	}
+	defer query.Close()
 	query.Next()
 	query.Scan(&artId)
-	query.Close()
+	return artId, nil
+}
 
-	_, err = Database.Exec(insertAlbum, song.Album, artId)
+func insertAlbum(name string, artistId int) (int, error) {
+	insAlbumQuery := "INSERT OR IGNORE INTO albums (name, artist_id) VALUES (?, ?);"
+	selectAlbumId := "SELECT id FROM albums WHERE (name, artist_id) = (?, ?)"
+	_, err := Database.Exec(insAlbumQuery, name, artistId)
 	if err != nil {
-		log.Println("Error while inserting Album:", err)
+		return 0, fmt.Errorf("Error while inserting Album: %s", err)
 	}
-	query, err = Database.Query(selectAlbumId, song.Album, artId)
+	query, err := Database.Query(selectAlbumId, name, artistId)
 	if err != nil {
-		log.Println("Error while selcting album:", err)
+		return 0, fmt.Errorf("Error while selcting album: %s", err)
 	}
+	defer query.Close()
+	var albId int
 	query.Next()
 	query.Scan(&albId)
-	query.Close()
+	return albId, nil
+}
 
+func insertSong(song structs.Song) error {
+	querySongs := "INSERT INTO songs (name, artist_id, album_id, path) VALUES  (?, ?, ?, ?);"
+	artId, err := insertArtist(song.Artist)
+	if err != nil {
+		return fmt.Errorf("Error inserting song: %s", err)
+	}
+	albId, err := insertAlbum(song.Album, artId)
+	if err != nil {
+		return fmt.Errorf("Error inserting album: %s", err)
+	}
 	_, err = Database.Exec(querySongs, song.Name, artId, albId, song.Path)
 	if err != nil {
-		log.Println("ahlo", err)
+		return fmt.Errorf("Error isnerting song: %s", err)
 	}
 	return nil
 }
