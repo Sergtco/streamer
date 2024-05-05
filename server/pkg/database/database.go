@@ -34,7 +34,6 @@ For reinitialization of database
 func ReinitDatabase() error {
 	mutex.Lock()
 	defer mutex.Unlock()
-
 	os.Remove(DataBasePath)
 	os.Remove(os.Getenv("HLS") + "*") // to prevent id collisions (TODO: more efficient way)
 	err := InitDatabase()
@@ -129,7 +128,7 @@ func insertSong(song structs.Song) error {
 	}
 	albId, err := insertAlbum(song.Album, artId)
 	if err != nil {
-		return fmt.Errorf("Error inserting album: %s", err)
+		return fmt.Errorf("Error inserting song: %s", err)
 	}
 	_, err = Database.Exec(querySongs, song.Name, artId, albId, song.Path)
 	if err != nil {
@@ -192,7 +191,6 @@ func getAlbum(id int) (structs.Album, error) {
 		return album, err
 	}
 	defer statement.Close()
-
 	err = statement.QueryRow(id).Scan(&album.Id, &album.Name, &album.Artist)
 	if err != nil {
 		return album, err
