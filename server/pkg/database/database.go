@@ -267,24 +267,28 @@ Returns all rows with specific artist.
 	return songs, nil
 } */
 
-func UserExist(login string) (bool, error) {
+/* Returns 0 if user does not exist */
+func GetUser(login string) (int, error) {
 	rows, err := Database.Query("SELECT id FROM users WHERE login = ?", login)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 	defer rows.Close()
-	return rows.Next(), nil
+	var userId int
+	rows.Next()
+	rows.Scan(&userId)
+	return userId, nil
 }
 
 /*
 Inserts user, if user exists returns ErrorUserExists error, else return user Id.
 */
 func InsertUser(name, login, password string) (int, error) {
-	exists, err := UserExist(login)
+	exists, err := GetUser(login)
 	if err != nil {
 		return 0, err
 	}
-	if exists {
+	if exists != 0 {
 		return 0, ErrorUserExists
 	}
 	_, err = Database.Exec(`INSERT OR IGNORE INTO users (name, login, password) 
