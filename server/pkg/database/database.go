@@ -1,15 +1,5 @@
 package database
 
-/*
-song
-|id|name|artist|album|path|
-artist
-|id|name|
-album
-|id|name|artist|cover|
-./artist/album/(song, cover.jpg)
-*/
-
 import (
 	"database/sql"
 	"fmt"
@@ -23,8 +13,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var DataBasePath = os.Getenv("DB_PATH")
+var (
+	ErrorUserExists error = fmt.Errorf("User already exist!")
+)
 
+var DataBasePath = os.Getenv("DB_PATH")
 var Database *sql.DB
 var mutex sync.Mutex
 
@@ -35,7 +28,7 @@ func ReinitDatabase() error {
 	mutex.Lock()
 	defer mutex.Unlock()
 	os.Remove(DataBasePath)
-	os.Remove(os.Getenv("HLS") + "*") // to prevent id collisions (TODO: more efficient way)
+	os.RemoveAll(os.Getenv("HLS"))
 	err := InitDatabase()
 	return err
 }
@@ -75,7 +68,7 @@ func fillDatabase(songs []structs.Song) error {
 		return fmt.Errorf("Database is closed.")
 	}
 	for _, song := range songs {
-		err := insertSong(song)
+		err := InsertSong(song)
 		if err != nil {
 			log.Println(err)
 		}
@@ -83,7 +76,28 @@ func fillDatabase(songs []structs.Song) error {
 	return nil
 }
 
-func insertArtist(name string) (int, error) {
+/*
+Returns the row with the given id of artist.
+
+	`id` - integer id of artist.
+*/
+func GetArtist(id int) (structs.Artist, error) {
+	var artist structs.Artist
+	statement, err := Database.Prepare("SELECT id, name FROM artists WHERE id = ?;")
+	if err != nil {
+		return artist, err
+	}
+	defer statement.Close()
+
+	err = statement.QueryRow(id).Scan(&artist.Id, &artist.Name)
+	if err != nil {
+		return artist, err
+	}
+
+	return artist, nil
+}
+
+func InsertArtist(name string) (int, error) {
 	insArtistQuery := "INSERT OR IGNORE INTO artists (name) VALUES (?);"
 	selectArtistId := "SELECT id FROM artists WHERE name = ?;"
 
@@ -102,7 +116,33 @@ func insertArtist(name string) (int, error) {
 	return artId, nil
 }
 
-func insertAlbum(name string, artistId int) (int, error) {
+/*
+Returns the row with the given id of album.
+
+	`id` - integer id of album.
+*/
+func GetAlbum(id int) (structs.Album, error) {
+	var album structs.Album
+	statement, err := Database.Prepare(
+		`
+		SELECT albums.id, albums.name, artists.name 
+		FROM albums 
+		LEFT JOIN artists ON albums.artist_id = artists.id
+		WHERE albums.id = ?;
+		`)
+	if err != nil {
+		return album, err
+	}
+	defer statement.Close()
+	err = statement.QueryRow(id).Scan(&album.Id, &album.Name, &album.Artist)
+	if err != nil {
+		return album, err
+	}
+
+	return album, nil
+}
+
+func InsertAlbum(name string, artistId int) (int, error) {
 	insAlbumQuery := "INSERT OR IGNORE INTO albums (name, artist_id) VALUES (?, ?);"
 	selectAlbumId := "SELECT id FROM albums WHERE (name, artist_id) = (?, ?)"
 	_, err := Database.Exec(insAlbumQuery, name, artistId)
@@ -120,13 +160,13 @@ func insertAlbum(name string, artistId int) (int, error) {
 	return albId, nil
 }
 
-func insertSong(song structs.Song) error {
+func InsertSong(song structs.Song) error {
 	querySongs := "INSERT INTO songs (name, artist_id, album_id, path) VALUES  (?, ?, ?, ?);"
-	artId, err := insertArtist(song.Artist)
+	artId, err := InsertArtist(song.Artist)
 	if err != nil {
 		return fmt.Errorf("Error inserting song: %s", err)
 	}
-	albId, err := insertAlbum(song.Album, artId)
+	albId, err := InsertAlbum(song.Album, artId)
 	if err != nil {
 		return fmt.Errorf("Error inserting song: %s", err)
 	}
@@ -144,7 +184,13 @@ Returns the row with the given id of song.
 */
 func GetSong(id int) (structs.Song, error) {
 	var song structs.Song
-	statement, err := Database.Prepare("SELECT id, name, artist, album, path FROM songs WHERE id = ?;")
+	statement, err := Database.Prepare(
+		`SELECT songs.id, songs.name, artists.name, albums.name, path 
+		FROM songs 
+		LEFT JOIN  artists ON artists.id = songs.artist_id
+		LEFT JOIN  albums ON albums.id = songs.artist_id
+		WHERE songs.id = ?;
+		`)
 	if err != nil {
 		return song, err
 	}
@@ -154,49 +200,21 @@ func GetSong(id int) (structs.Song, error) {
 	if err != nil {
 		return song, err
 	}
-
 	return song, nil
 }
 
-/*
-Returns the row with the given id of artist.
-
-	`id` - integer id of artist.
-*/
-func getArtist(id int) (structs.Artist, error) {
-	var artist structs.Artist
-	statement, err := Database.Prepare("SELECT id, name FROM artists WHERE id = ?;")
+func DeleteSong(id int) (structs.Song, error) {
+	song, err := GetSong(id)
 	if err != nil {
-		return artist, err
+		return song, err
 	}
-	defer statement.Close()
-
-	err = statement.QueryRow(id).Scan(&artist.Id, &artist.Name)
+	mutex.Lock()
+	defer mutex.Unlock()
+	_, err = Database.Exec("DELETE FROM songs WHERE id = ?", id)
 	if err != nil {
-		return artist, err
+		return song, err
 	}
-
-	return artist, nil
-}
-
-/*
-Returns the row with the given id of album.
-
-	`id` - integer id of album.
-*/
-func getAlbum(id int) (structs.Album, error) {
-	var album structs.Album
-	statement, err := Database.Prepare("SELECT id, name, artist FROM albums WHERE id = ?;")
-	if err != nil {
-		return album, err
-	}
-	defer statement.Close()
-	err = statement.QueryRow(id).Scan(&album.Id, &album.Name, &album.Artist)
-	if err != nil {
-		return album, err
-	}
-
-	return album, nil
+	return song, nil
 }
 
 /*
@@ -226,7 +244,7 @@ func GetAllSongs() ([]structs.Song, error) {
 Returns all rows with specific artist.
 `artist` - string of artist's name.
 */
-func getByArtist(id int) ([]structs.Song, error) {
+/* func getByArtist(id int) ([]structs.Song, error) {
 	artist, err := getArtist(id)
 	if err != nil {
 		return nil, err
@@ -247,25 +265,40 @@ func getByArtist(id int) ([]structs.Song, error) {
 		songs = append(songs, song)
 	}
 	return songs, nil
+} */
+
+func UserExist(login string) (bool, error) {
+	rows, err := Database.Query("SELECT id FROM users WHERE login = ?", login)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	return rows.Next(), nil
 }
 
 /*
-Returns all rows with specific album.
-`album` - string of album's name.
+Inserts user, if user exists returns ErrorUserExists error, else return user Id.
 */
-func getByAlbum(album string) {
-}
-
-func DeleteSong(id int) (structs.Song, error) {
-	song, err := GetSong(id)
+func InsertUser(name, login, password string) (int, error) {
+	exists, err := UserExist(login)
 	if err != nil {
-		return song, err
+		return 0, err
 	}
-	mutex.Lock()
-	defer mutex.Unlock()
-	_, err = Database.Exec("DELETE FROM songs WHERE id = ?", id)
+	if exists {
+		return 0, ErrorUserExists
+	}
+	_, err = Database.Exec(`INSERT OR IGNORE INTO users (name, login, password) 
+		VALUES (?, ?, ?)`, name, login, password)
 	if err != nil {
-		return song, err
+		return 0, err
 	}
-	return song, nil
+	rows, err := Database.Query("SELECT id from users WHERE login = ?", login)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	rows.Next()
+	var userId int
+	rows.Scan(&userId)
+	return userId, nil
 }
