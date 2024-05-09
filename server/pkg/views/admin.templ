@@ -24,9 +24,9 @@ templ UserList(users []structs.User) {
 				<li>
 					<form method="post">
 						<label for="login">Login: </label>
-						<input type="text" name="login" placeholder={ user.Login }/>
+						<input type="text" name="login" value={ user.Login } readonly/>
 						<label for="name">Name: </label>
-						<input type="text" name="name" placeholder={ user.Name }/>
+						<input type="text" name="name" value={ user.Name }/>
 						<label for="admin">Is Admin:</label>
 						if user.IsAdmin == true {
 							<input type="checkbox" id="admin" name="admin" checked/>
@@ -35,14 +35,14 @@ templ UserList(users []structs.User) {
 						}
 						<label for="password">Password: </label>
 						<input type="password" name="password"/>
-						<input type="submit" formaction="/change_user" value="Change"/>
-						<input type="submit" formaction="/delete_user" value="Delete"/>
+						<input type="submit" formaction="/admin/change_user" value="Change"/>
+						<input type="submit" formaction="/admin/delete_user" value="Delete"/>
 					</form>
 				</li>
 			}
 		</ul>
 		<h2>Add new user</h2>
-		<form action="/add_user" method="post">
+		<form action="/admin/add_user" method="post">
 			<label for="login">Login: </label>
 			<input type="text" name="login"/>
 

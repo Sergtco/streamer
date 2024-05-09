@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"stream/pkg/database"
+	"stream/pkg/structs"
 	"stream/pkg/views"
 	"strings"
 	"sync"
@@ -28,6 +29,46 @@ func AdminIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	comp := views.Index(users)
 	comp.Render(r.Context(), w)
+}
+
+func AddUser(w http.ResponseWriter, r *http.Request) {
+	newUser := &structs.User{}
+	newUser.IsAdmin = len(r.FormValue("admin")) > 0
+	newUser.Login = r.FormValue("login")
+	newUser.Password = r.FormValue("password")
+	newUser.Name = r.FormValue("name")
+	if len(newUser.Login) != 0 && len(newUser.Password) != 0 && len(newUser.Name) != 0 {
+		admin := 0
+		if newUser.IsAdmin == true {
+			admin = 1
+		}
+		newUser.Password = HashPassword(newUser.Password)
+		database.InsertUser(newUser.Name, newUser.Login, newUser.Password, admin)
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	return
+}
+
+func ChangeUser(w http.ResponseWriter, r *http.Request) {
+	newUser := &structs.User{}
+	newUser.Login = r.FormValue("login")
+	newUser.Password = r.FormValue("password")
+	newUser.Name = r.FormValue("name")
+	if len(newUser.Login) != 0 && len(newUser.Password) != 0 && len(newUser.Name) != 0 {
+		newUser.Password = HashPassword(newUser.Password)
+		database.UpdateUser(newUser.Name, newUser.Login, newUser.Password)
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	return
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	login := r.FormValue("login")
+	err := database.DeleteUser(login)
+	if err != nil {
+		log.Println(err)
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
 func AdminLogin(w http.ResponseWriter, r *http.Request) {
@@ -116,4 +157,9 @@ func UrlIsAdmin(url string) bool {
 	}
 	return false
 
+}
+
+func HashPassword(password string) string {
+	bytes := sha256.Sum256([]byte(password))
+	return string(bytes[:])
 }

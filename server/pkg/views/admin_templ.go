@@ -62,27 +62,27 @@ func UserList(users []structs.User) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, user := range users {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<li><form method=\"post\"><label for=\"login\">Login: </label> <input type=\"text\" name=\"login\" placeholder=\"")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<li><form method=\"post\"><label for=\"login\">Login: </label> <input type=\"text\" name=\"login\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(user.Login)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `pkg/views/admin.templ`, Line: 27, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `pkg/views/admin.templ`, Line: 27, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label for=\"name\">Name: </label> <input type=\"text\" name=\"name\" placeholder=\"")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" readonly> <label for=\"name\">Name: </label> <input type=\"text\" name=\"name\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(user.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `pkg/views/admin.templ`, Line: 29, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `pkg/views/admin.templ`, Line: 29, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -103,12 +103,12 @@ func UserList(users []structs.User) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<label for=\"password\">Password: </label> <input type=\"password\" name=\"password\"> <input type=\"submit\" formaction=\"/change_user\" value=\"Change\"> <input type=\"submit\" formaction=\"/delete_user\" value=\"Delete\"></form></li>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<label for=\"password\">Password: </label> <input type=\"password\" name=\"password\"> <input type=\"submit\" formaction=\"/admin/change_user\" value=\"Change\"> <input type=\"submit\" formaction=\"/admin/delete_user\" value=\"Delete\"></form></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</ul><h2>Add new user</h2><form action=\"/add_user\" method=\"post\"><label for=\"login\">Login: </label> <input type=\"text\" name=\"login\"> <label for=\"name\">Name: </label> <input type=\"text\" name=\"name\"> <label for=\"admin\">Is Admin:</label> <input type=\"checkbox\" id=\"admin\" name=\"admin\"> <label for=\"password\">Password: </label> <input type=\"password\" name=\"password\"> <input type=\"submit\" value=\"Create\"></form></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</ul><h2>Add new user</h2><form action=\"/admin/add_user\" method=\"post\"><label for=\"login\">Login: </label> <input type=\"text\" name=\"login\"> <label for=\"name\">Name: </label> <input type=\"text\" name=\"name\"> <label for=\"admin\">Is Admin:</label> <input type=\"checkbox\" id=\"admin\" name=\"admin\"> <label for=\"password\">Password: </label> <input type=\"password\" name=\"password\"> <input type=\"submit\" value=\"Create\"></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -132,7 +132,7 @@ func Login(err string) templ.Component {
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<html lang=\"en\"></html><head><meta charset=\"UTF-8\"><meta name=\"viewport\"><title>Admin Page</title></head><body><div><form method=\"POST\"><input name=\"login\" type=\"text\"> <input name=\"password\" type=\"password\"> <input formaction=\"/admin/login\" type=\"submit\"></form><p class=\"error\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<html lang=\"en\"></html><head><meta charset=\"UTF-8\"><meta name=\"viewport\"><title>Admin Page</title></head><body><div><form method=\"POST\"><input name=\"login\" type=\"text\"> <input name=\"password\" type=\"password\"> <input formaction=\"/admin/login\" type=\"submit\" value=\"Login!\"></form><p class=\"error\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

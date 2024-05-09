@@ -327,6 +327,16 @@ func GetAllUsers() ([]structs.User, error) {
 	return res, nil
 }
 
+func UpdateUser(name, login, password string) error {
+	_, err := Database.Exec(`UPDATE users
+		SET name = ?, password = ?
+		WHERE login = ?`, name, password, login)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func DeleteUser(login string) error {
 	_, err := Database.Exec(`DELETE FROM users WHERE login = ?`, login)
 	if err != nil {

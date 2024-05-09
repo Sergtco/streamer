@@ -17,9 +17,13 @@ func main() {
 	router.HandleFunc("/segments/{song}/{file}", pkg.ServeTS)
 	router.HandleFunc("/getSongData/{song}", pkg.GetSongData)
 	router.HandleFunc("DELETE /deleteSong/{song}", pkg.DeleteHandler)
+	// Admin for browser
 	router.HandleFunc("GET /admin", pkg.ValidateJwt(http.HandlerFunc(pkg.AdminIndex)))
 	router.HandleFunc("GET /admin/login", pkg.AdminLogin)
 	router.HandleFunc("POST /admin/login", pkg.CheckAdminLogin)
+	router.HandleFunc("POST /admin/add_user", pkg.AddUser)
+	router.HandleFunc("POST /admin/change_user", pkg.ChangeUser)
+	router.HandleFunc("POST /admin/delete_user", pkg.DeleteUser)
 
 	server := http.Server{
 		Addr:    ":8080",
