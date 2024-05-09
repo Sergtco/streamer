@@ -18,3 +18,11 @@ type Album struct {
 	Artist string `json:"artist"`
 	Cover  string `json:"cover"`
 }
+
+type User struct {
+	Id       int
+	Name     string
+	Login    string
+	Password string
+	IsAdmin  bool
+}

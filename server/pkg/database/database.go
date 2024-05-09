@@ -35,11 +35,13 @@ func ReinitDatabase() error {
 
 /*
 Function that initializes the database.
+Returns fs.ErrExists if dtatabase exists
 */
 func InitDatabase() error {
 	if _, err := os.Stat(DataBasePath); os.IsNotExist(err) {
 		os.Create(DataBasePath)
 	}
+
 	var err error
 	Database, err = sql.Open("sqlite3", DataBasePath)
 	data, err := os.ReadFile("./config/migrations.sql")
@@ -161,7 +163,7 @@ func InsertAlbum(name string, artistId int) (int, error) {
 }
 
 func InsertSong(song structs.Song) error {
-	querySongs := "INSERT INTO songs (name, artist_id, album_id, path) VALUES  (?, ?, ?, ?);"
+	querySongs := "INSERT OR IGNORE INTO songs (name, artist_id, album_id, path) VALUES  (?, ?, ?, ?);"
 	artId, err := InsertArtist(song.Artist)
 	if err != nil {
 		return fmt.Errorf("Error inserting song: %s", err)
@@ -268,31 +270,35 @@ Returns all rows with specific artist.
 } */
 
 /* Returns 0 if user does not exist */
-func GetUser(login string) (int, error) {
-	rows, err := Database.Query("SELECT id FROM users WHERE login = ?", login)
+func GetUser(login string) (*structs.User, error) {
+	rows, err := Database.Query("SELECT id, name, login, password, is_admin FROM users WHERE login = ?", login)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer rows.Close()
-	var userId int
-	rows.Next()
-	rows.Scan(&userId)
-	return userId, nil
+	exist := rows.Next()
+	if !exist {
+		return nil, nil
+	}
+	user := &structs.User{}
+	rows.Scan(&user.Id, &user.Name, &user.Login, &user.Password, &user.IsAdmin)
+	return user, nil
 }
 
 /*
 Inserts user, if user exists returns ErrorUserExists error, else return user Id.
 */
-func InsertUser(name, login, password string) (int, error) {
+func InsertUser(name, login, password string, isAdmin int) (int, error) {
 	exists, err := GetUser(login)
 	if err != nil {
 		return 0, err
 	}
-	if exists != 0 {
+	if exists != nil {
 		return 0, ErrorUserExists
 	}
-	_, err = Database.Exec(`INSERT OR IGNORE INTO users (name, login, password) 
-		VALUES (?, ?, ?)`, name, login, password)
+
+	_, err = Database.Exec(`INSERT OR IGNORE INTO users (name, login, password, is_admin) 
+		VALUES (?, ?, ?, ?)`, name, login, password, isAdmin)
 	if err != nil {
 		return 0, err
 	}
@@ -305,4 +311,12 @@ func InsertUser(name, login, password string) (int, error) {
 	var userId int
 	rows.Scan(&userId)
 	return userId, nil
+}
+
+func DeleteUser(login string) error {
+	_, err := Database.Exec(`DELETE FROM users WHERE login = ?`, login)
+	if err != nil {
+		return err
+	}
+	return nil
 }

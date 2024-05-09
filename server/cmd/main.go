@@ -1,12 +1,11 @@
 package main
 
 import (
+	"github.com/gorilla/handlers"
 	"log"
 	"net/http"
 	"os"
 	"stream/pkg"
-
-	"github.com/gorilla/handlers"
 )
 
 func main() {
@@ -18,6 +17,9 @@ func main() {
 	router.HandleFunc("/segments/{song}/{file}", pkg.ServeTS)
 	router.HandleFunc("/getSongData/{song}", pkg.GetSongData)
 	router.HandleFunc("DELETE /deleteSong/{song}", pkg.DeleteHandler)
+	router.HandleFunc("GET /admin", pkg.AdminIndex)
+	router.HandleFunc("GET /login", pkg.Login)
+	router.HandleFunc("POST /login", pkg.Validate)
 
 	server := http.Server{
 		Addr:    ":8080",
