@@ -71,7 +71,7 @@ templ Login(err string) {
 			<form method="POST">
 				<input name="login" type="text"/>
 				<input name="password" type="password"/>
-				<input type="submit"/>
+				<input formaction="/admin/login" type="submit" value="Login!"/>
 			</form>
 			<p class="error">{ err }</p>
 		</div>

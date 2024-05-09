@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"stream/pkg/database"
 	"stream/pkg/views"
+	"strings"
 	"sync"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -29,12 +30,12 @@ func AdminIndex(w http.ResponseWriter, r *http.Request) {
 	comp.Render(r.Context(), w)
 }
 
-func Login(w http.ResponseWriter, r *http.Request) {
+func AdminLogin(w http.ResponseWriter, r *http.Request) {
 	comp := views.Login("")
 	comp.Render(r.Context(), w)
 }
 
-func CheckLogin(w http.ResponseWriter, r *http.Request) {
+func CheckAdminLogin(w http.ResponseWriter, r *http.Request) {
 	login, password := r.FormValue("login"), r.FormValue("password")
 	user, err := database.GetUser(login)
 	if user == nil || err != nil {
@@ -59,7 +60,9 @@ func CheckLogin(w http.ResponseWriter, r *http.Request) {
 		Value: tokenString,
 	})
 	Cache.Store(login, tokenString)
-	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	if user.IsAdmin {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	}
 }
 
 func ValidateJwt(handler http.Handler) http.HandlerFunc {
@@ -67,8 +70,11 @@ func ValidateJwt(handler http.Handler) http.HandlerFunc {
 		var cookie *http.Cookie
 		var err error
 		if cookie, err = r.Cookie("Token"); err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Go authorize!"))
+			if UrlIsAdmin(r.URL.Path) {
+				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+				return
+			}
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 		token, err := jwt.ParseWithClaims(cookie.Value, &LoginClaims{}, func(t *jwt.Token) (interface{}, error) {
@@ -78,8 +84,11 @@ func ValidateJwt(handler http.Handler) http.HandlerFunc {
 			return []byte("Secret"), nil
 		})
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("BadToken"))
+			if UrlIsAdmin(r.URL.Path) {
+				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+				return
+			}
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 		if claims, ok := token.Claims.(*LoginClaims); ok && token.Valid {
@@ -88,8 +97,23 @@ func ValidateJwt(handler http.Handler) http.HandlerFunc {
 				return
 			}
 		}
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("BadToken"))
+		if UrlIsAdmin(r.URL.Path) {
+			http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	})
+}
+
+func UrlIsAdmin(url string) bool {
+	splitted := strings.Split(url, "/")
+	log.Println(url)
+	for _, p := range splitted {
+		if p == "admin" {
+			return true
+		}
+	}
+	return false
+
 }
