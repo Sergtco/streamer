@@ -313,6 +313,20 @@ func InsertUser(name, login, password string, isAdmin int) (int, error) {
 	return userId, nil
 }
 
+func GetAllUsers() ([]structs.User, error) {
+	res := []structs.User{}
+	rows, err := Database.Query(`SELECT id, name, login, password, is_admin FROM users;`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		user := structs.User{}
+		rows.Scan(&user.Id, &user.Name, &user.Login, &user.Password, &user.IsAdmin)
+		res = append(res, user)
+	}
+	return res, nil
+}
+
 func DeleteUser(login string) error {
 	_, err := Database.Exec(`DELETE FROM users WHERE login = ?`, login)
 	if err != nil {

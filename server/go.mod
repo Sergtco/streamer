@@ -5,6 +5,7 @@ go 1.22.1
 require (
 	github.com/a-h/templ v0.2.680
 	github.com/dhowden/tag v0.0.0-20240122214204-713ab0e94639
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/gorilla/handlers v1.5.2
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.22

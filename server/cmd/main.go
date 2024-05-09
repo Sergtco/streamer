@@ -17,9 +17,9 @@ func main() {
 	router.HandleFunc("/segments/{song}/{file}", pkg.ServeTS)
 	router.HandleFunc("/getSongData/{song}", pkg.GetSongData)
 	router.HandleFunc("DELETE /deleteSong/{song}", pkg.DeleteHandler)
-	router.HandleFunc("GET /admin", pkg.AdminIndex)
+	router.HandleFunc("GET /admin", pkg.ValidateJwt(http.HandlerFunc(pkg.AdminIndex)))
 	router.HandleFunc("GET /login", pkg.Login)
-	router.HandleFunc("POST /login", pkg.Validate)
+	router.HandleFunc("POST /login", pkg.CheckLogin)
 
 	server := http.Server{
 		Addr:    ":8080",
