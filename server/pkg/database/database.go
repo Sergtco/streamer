@@ -223,7 +223,10 @@ func DeleteSong(id int) (structs.Song, error) {
 Returns all rows with songs.
 */
 func GetAllSongs() ([]structs.Song, error) {
-	rows, err := Database.Query("SELECT id, name, artist, album, path FROM songs;")
+	rows, err := Database.Query(`SELECT songs.id, songs.name, artists.name, albums.name, path 
+		FROM songs
+		LEFT JOIN artists ON  artists.id = songs.artist_id
+		LEFT JOIN albums ON albums.id = songs.album_id`)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +272,7 @@ Returns all rows with specific artist.
 	return songs, nil
 } */
 
-/* Returns 0 if user does not exist */
+/* Returns nil if user does not exist */
 func GetUser(login string) (*structs.User, error) {
 	rows, err := Database.Query("SELECT id, name, login, password, is_admin FROM users WHERE login = ?", login)
 	if err != nil {
@@ -327,10 +330,10 @@ func GetAllUsers() ([]structs.User, error) {
 	return res, nil
 }
 
-func UpdateUser(name, login, password string) error {
+func UpdateUser(name, login, password string, IsAdmin bool) error {
 	_, err := Database.Exec(`UPDATE users
-		SET name = ?, password = ?
-		WHERE login = ?`, name, password, login)
+		SET name = ?, password = ?, is_admin = ?
+		WHERE login = ?`, name, password, IsAdmin, login)
 	if err != nil {
 		return err
 	}

@@ -1,25 +1,18 @@
-package pkg
+package admin
 
 import (
 	"crypto/sha256"
-	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"stream/pkg/admin/views"
 	"stream/pkg/database"
 	"stream/pkg/structs"
-	"stream/pkg/views"
 	"strings"
 	"sync"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 var Cache sync.Map = sync.Map{}
-
-type LoginClaims struct {
-	Login string `json:"login"`
-	jwt.RegisteredClaims
-}
 
 func AdminIndex(w http.ResponseWriter, r *http.Request) {
 	users, err := database.GetAllUsers()
@@ -54,9 +47,10 @@ func ChangeUser(w http.ResponseWriter, r *http.Request) {
 	newUser.Login = r.FormValue("login")
 	newUser.Password = r.FormValue("password")
 	newUser.Name = r.FormValue("name")
+	newUser.IsAdmin = len(r.FormValue("admin")) > 0
 	if len(newUser.Login) != 0 && len(newUser.Password) != 0 && len(newUser.Name) != 0 {
 		newUser.Password = HashPassword(newUser.Password)
-		database.UpdateUser(newUser.Name, newUser.Login, newUser.Password)
+		database.UpdateUser(newUser.Name, newUser.Login, newUser.Password, newUser.IsAdmin)
 	}
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 	return
@@ -69,6 +63,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	return
 }
 
 func AdminLogin(w http.ResponseWriter, r *http.Request) {
@@ -79,77 +74,95 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 func CheckAdminLogin(w http.ResponseWriter, r *http.Request) {
 	login, password := r.FormValue("login"), r.FormValue("password")
 	user, err := database.GetUser(login)
+
 	if user == nil || err != nil {
 		comp := views.Login("User not found")
 		comp.Render(r.Context(), w)
 		return
 	}
-	passwordSha := sha256.Sum256([]byte(password))
-	if string(passwordSha[:]) != user.Password {
+	if HashPassword(password) != user.Password {
 		comp := views.Login("Wrong password")
 		comp.Render(r.Context(), w)
 		return
 	}
-	claims := &LoginClaims{Login: login}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte("Secret"))
+
+	tokenString, err := EncodeLogin(user.Login, user.IsAdmin)
+
 	if err != nil {
-		log.Println("Error in generating JWT: ", err)
+		log.Println(err)
+		NotFoundHandler(w, r, http.StatusInternalServerError)
+		return
 	}
+
 	http.SetCookie(w, &http.Cookie{
-		Name:  "Token",
+		Name:  "token",
 		Value: tokenString,
 	})
 	Cache.Store(login, tokenString)
 	if user.IsAdmin {
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+		return
 	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func ValidateJwt(handler http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var cookie *http.Cookie
-		var err error
-		if cookie, err = r.Cookie("Token"); err != nil {
-			if UrlIsAdmin(r.URL.Path) {
-				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
-				return
-			}
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-		token, err := jwt.ParseWithClaims(cookie.Value, &LoginClaims{}, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("Bad Signing Method!")
-			}
-			return []byte("Secret"), nil
-		})
+		tokenString, err := r.Cookie("token")
 		if err != nil {
-			if UrlIsAdmin(r.URL.Path) {
-				http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
-				return
-			}
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			log.Println(err)
+			RedirectToLogin(w, r)
 			return
 		}
-		if claims, ok := token.Claims.(*LoginClaims); ok && token.Valid {
-			if _, ok := Cache.Load(claims.Login); ok {
-				handler.ServeHTTP(w, r)
-				return
-			}
-		}
-		if UrlIsAdmin(r.URL.Path) {
-			http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+		claims, err := DecodeLogin(tokenString.Value)
+		if err != nil {
+			log.Println(err)
+			RedirectToLogin(w, r)
 			return
 		}
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		if exists, err := database.GetUser(claims.Login); exists != nil && err == nil {
+			handler.ServeHTTP(w, r)
+			return
+		}
+		RedirectToLogin(w, r)
 		return
 	})
 }
 
+func ListSongs(w http.ResponseWriter, r *http.Request) {
+	songs, err := database.GetAllSongs()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Oops, something wrong"))
+		log.Println("Errror listing songs to admin:", err)
+		return
+	}
+	comp := views.Songs(songs)
+	err = comp.Render(r.Context(), w)
+	if err != nil {
+		NotFoundHandler(w, r, http.StatusInternalServerError)
+		return
+	}
+	return
+}
+
+func RedirectToLogin(w http.ResponseWriter, r *http.Request) {
+	if UrlIsAdmin(r.URL.Path) {
+		http.Redirect(w, r, "/admin/login", http.StatusUnauthorized)
+		return
+	}
+	http.Redirect(w, r, "/login", http.StatusUnauthorized)
+	return
+}
+
+func NotFoundHandler(w http.ResponseWriter, r *http.Request, code int) {
+	comp := views.NotFound(strconv.Itoa(code))
+	w.WriteHeader(code)
+	comp.Render(r.Context(), w)
+}
+
 func UrlIsAdmin(url string) bool {
 	splitted := strings.Split(url, "/")
-	log.Println(url)
 	for _, p := range splitted {
 		if p == "admin" {
 			return true

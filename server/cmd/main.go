@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"stream/pkg"
+	"stream/pkg/admin"
 )
 
 func main() {
@@ -18,12 +19,13 @@ func main() {
 	router.HandleFunc("/getSongData/{song}", pkg.GetSongData)
 	router.HandleFunc("DELETE /deleteSong/{song}", pkg.DeleteHandler)
 	// Admin for browser
-	router.HandleFunc("GET /admin", pkg.ValidateJwt(http.HandlerFunc(pkg.AdminIndex)))
-	router.HandleFunc("GET /admin/login", pkg.AdminLogin)
-	router.HandleFunc("POST /admin/login", pkg.CheckAdminLogin)
-	router.HandleFunc("POST /admin/add_user", pkg.AddUser)
-	router.HandleFunc("POST /admin/change_user", pkg.ChangeUser)
-	router.HandleFunc("POST /admin/delete_user", pkg.DeleteUser)
+	router.HandleFunc("GET /admin/login", admin.AdminLogin)
+	router.HandleFunc("POST /admin/login", admin.CheckAdminLogin)
+	router.HandleFunc("GET /admin", admin.ValidateJwt(http.HandlerFunc(admin.AdminIndex)))
+	router.HandleFunc("GET /admin/songs", admin.ValidateJwt(http.HandlerFunc(admin.ListSongs)))
+	router.HandleFunc("POST /admin/add_user", admin.ValidateJwt(http.HandlerFunc(admin.AddUser)))
+	router.HandleFunc("POST /admin/change_user", admin.ValidateJwt(http.HandlerFunc(admin.ChangeUser)))
+	router.HandleFunc("POST /admin/delete_user", admin.ValidateJwt(http.HandlerFunc(admin.DeleteUser)))
 
 	server := http.Server{
 		Addr:    ":8080",
