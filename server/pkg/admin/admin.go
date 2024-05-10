@@ -2,6 +2,7 @@ package admin
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -64,6 +65,41 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 	return
+}
+
+type LoginForm struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
+/*
+Gets json with login and hashed password.
+
+Uses `LoginForm` struct to deserialize.
+*/
+func UserLogin(w http.ResponseWriter, r *http.Request) {
+	body := r.Body
+	defer body.Close()
+	var data []byte
+	body.Read(data)
+	form := &LoginForm{}
+	err := json.Unmarshal(data, form)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user, err := database.GetUser(form.Login)
+	if user == nil || err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	tokenString, err := EncodeLogin(user.Login, user.IsAdmin)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	http.SetCookie(w, &http.Cookie{Value: tokenString, Name: "Token"})
+	w.WriteHeader(http.StatusOK)
 }
 
 func AdminLogin(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +205,6 @@ func UrlIsAdmin(url string) bool {
 		}
 	}
 	return false
-
 }
 
 func HashPassword(password string) string {
