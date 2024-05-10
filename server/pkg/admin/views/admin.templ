@@ -4,117 +4,129 @@ import "stream/pkg/structs"
 import "strconv"
 
 templ Index(users []structs.User) {
-	<html lang="en">
-		<head>
-			<meta charset="UTF-8"/>
-			<meta name="viewport"/>
-			<title>Admin Page</title>
-		</head>
-		<body>
-			<h1>Howdy!</h1>
-			<a href="/admin/songs">
-				<button>Edit songs</button>
-			</a>
-			@UserList(users)
-		</body>
-	</html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" />
+    <title>Admin Page</title>
+</head>
+
+<body>
+    <h1>Howdy!</h1>
+    <a href="/admin/songs">
+        <button>Edit songs</button>
+    </a>
+    @UserList(users)
+</body>
+
+</html>
 }
 
 templ UserList(users []structs.User) {
-	<div>
-		<h1>Users: </h1>
-		<ul>
-			for _, user := range users {
-				<li>
-					<form method="post">
-						<label for="login">Login: </label>
-						<input type="text" name="login" value={ user.Login } readonly/>
-						<label for="name">Name: </label>
-						<input type="text" name="name" value={ user.Name }/>
-						<label for="admin">Is Admin:</label>
-						if user.IsAdmin == true {
-							<input type="checkbox" id="admin" name="admin" checked/>
-						} else {
-							<input type="checkbox" id="admin" name="admin"/>
-						}
-						<label for="password">Password: </label>
-						<input type="password" name="password"/>
-						<input type="submit" formaction="/admin/change_user" value="Change"/>
-						<input type="submit" formaction="/admin/delete_user" value="Delete"/>
-					</form>
-				</li>
-			}
-		</ul>
-		<h2>Add new user</h2>
-		<form action="/admin/add_user" method="post">
-			<label for="login">Login: </label>
-			<input type="text" name="login"/>
-			<label for="name">Name: </label>
-			<input type="text" name="name"/>
-			<label for="admin">Is Admin:</label>
-			<input type="checkbox" id="admin" name="admin"/>
-			<label for="password">Password: </label>
-			<input type="password" name="password"/>
-			<input type="submit" value="Create"/>
-		</form>
-	</div>
+<div>
+    <h1>Users: </h1>
+    <ul>
+        for _, user := range users {
+        <li>
+            <form method="post">
+                <label for="login">Login: </label>
+                <input type="text" name="login" value={ user.Login } readonly />
+                <label for="name">Name: </label>
+                <input type="text" name="name" value={ user.Name } />
+                <label for="admin">Is Admin:</label>
+                if user.IsAdmin == true {
+                <input type="checkbox" id="admin" name="admin" checked />
+                } else {
+                <input type="checkbox" id="admin" name="admin" />
+                }
+                <label for="password">Password: </label>
+                <input type="password" name="password" />
+                <input type="submit" formaction="/admin/change_user" value="Change" />
+                <input type="submit" formaction="/admin/delete_user" value="Delete" />
+            </form>
+        </li>
+        }
+    </ul>
+    <h2>Add new user</h2>
+    <form action="/admin/add_user" method="post">
+        <label for="login">Login: </label>
+        <input type="text" name="login" />
+        <label for="name">Name: </label>
+        <input type="text" name="name" />
+        <label for="admin">Is Admin:</label>
+        <input type="checkbox" id="admin" name="admin" />
+        <label for="password">Password: </label>
+        <input type="password" name="password" />
+        <input type="submit" value="Create" />
+    </form>
+</div>
 }
 
 script deleteSong(id int) {
-	fetch('/deleteSong/' + id, {
-		method: 'DELETE'
-	}).then(() => location.reload());
+fetch('/deleteSong/' + id, {
+method: 'DELETE'
+}).then(() => location.reload());
 }
 
 templ Songs(songs []structs.Song) {
-	<html>
-		<head>
-			<meta charset="UTF-8"/>
-			<meta name="viewport"/>
-			<title>Song List</title>
-		</head>
-		<body>
-			<div>
-				<ul>
-					for _, song := range songs {
-						<li>
-							{ strconv.Itoa(song.Id) } | { song.Name } | { song.Album } | { song.Artist } | 
-							<button onclick={ deleteSong(song.Id) }>Delete</button>
-						</li>
-					}
-				</ul>
-			</div>
-		</body>
-	</html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" />
+    <title>Song List</title>
+</head>
+
+<body>
+    <div>
+        <ul>
+            for _, song := range songs {
+            <li>
+                { strconv.Itoa(song.Id) } | { song.Name } | { song.Album } | { song.Artist } |
+                <button onclick={ deleteSong(song.Id) }>Delete</button>
+            </li>
+            }
+        </ul>
+    </div>
+</body>
+
+</html>
 }
 
 templ Login(err string) {
-	<html lang="en">
-		<head>
-			<meta charset="UTF-8"/>
-			<meta name="viewport"/>
-			<title>Admin Page</title>
-		</head>
-		<body>
-			<div>
-				<form method="POST">
-					<input name="login" type="text"/>
-					<input name="password" type="password"/>
-					<input formaction="/admin/login" type="submit" value="Login!"/>
-				</form>
-				<p class="error">{ err }</p>
-			</div>
-		</body>
-	</html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" />
+    <title>Admin Page</title>
+</head>
+
+<body>
+    <div>
+        <form method="POST">
+            <input name="login" type="text" />
+            <input name="password" type="password" />
+            <input formaction="/admin/login" type="submit" value="Login!" />
+        </form>
+        <p class="error">{ err }</p>
+    </div>
+</body>
+
+</html>
 }
 
 templ NotFound(code string) {
-	<html lang="en">
-		<head>
-			<title>Error { code }</title>
-		</head>
-		<body>
-			<h1>Error { code }! </h1>
-		</body>
-	</html>
+<html lang="en">
+
+<head>
+    <title>Error { code }</title>
+</head>
+
+<body>
+    <h1>Error { code }! </h1>
+</body>
+
+</html>
 }

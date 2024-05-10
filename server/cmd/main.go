@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/gorilla/handlers"
 	"log"
 	"net/http"
 	"os"
 	"stream/pkg"
 	"stream/pkg/admin"
+
+	"github.com/gorilla/handlers"
 )
 
 func main() {

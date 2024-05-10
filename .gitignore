@@ -1,5 +1,5 @@
 server/main
-server/catalogue/*
-server/hls/*
+server/catalogue
+server/hls
 server/*.db
 # server/config IDK why this was ignored
