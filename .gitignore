@@ -2,4 +2,5 @@ server/main
 server/catalogue
 server/hls
 server/*.db
+./**/*_templ.go
 # server/config IDK why this was ignored
