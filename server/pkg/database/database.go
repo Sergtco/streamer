@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"stream/pkg/filesystem"
@@ -35,13 +36,14 @@ func ReinitDatabase() error {
 
 /*
 Function that initializes the database.
-Returns fs.ErrExists if dtatabase exists
+Returns fs.ErrExist if dtatabase exists
 */
 func InitDatabase() error {
 	if _, err := os.Stat(DataBasePath); os.IsNotExist(err) {
 		os.Create(DataBasePath)
+	} else {
+		return fs.ErrExist
 	}
-
 	var err error
 	Database, err = sql.Open("sqlite3", DataBasePath)
 	data, err := os.ReadFile("./config/migrations.sql")
