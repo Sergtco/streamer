@@ -20,9 +20,16 @@ type Album struct {
 }
 
 type User struct {
-	Id       int
-	Name     string
-	Login    string
-	Password string
-	IsAdmin  bool
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	Login    string `json:"login"`
+	Password string `json:"password"`
+	IsAdmin  bool   `json:"is_admin"`
+}
+
+type Playlist struct {
+	Id     int    `json:"id"`
+	UserId int    `json:"user_id"`
+	Name   string `json:"name"`
+	Songs  []int  `json:"songs"`
 }
