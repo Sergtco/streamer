@@ -3,7 +3,9 @@ package admin
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"io"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"stream/pkg/admin/views"
@@ -11,6 +13,7 @@ import (
 	"stream/pkg/structs"
 	"strings"
 	"sync"
+	"time"
 )
 
 var Cache sync.Map = sync.Map{}
@@ -78,13 +81,11 @@ Gets json with login and hashed password.
 Uses `LoginForm` struct to deserialize.
 */
 func UserLogin(w http.ResponseWriter, r *http.Request) {
-	body := r.Body
-	defer body.Close()
-	var data []byte
-	body.Read(data)
+	data, _ := io.ReadAll(r.Body)
 	form := &LoginForm{}
 	err := json.Unmarshal(data, form)
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -98,7 +99,14 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	http.SetCookie(w, &http.Cookie{Value: tokenString, Name: "Token"})
+	exp := time.Now().Add(time.Hour * 24 * 365)
+	http.SetCookie(w, &http.Cookie{
+		Value:   tokenString,
+		Name:    "token",
+		Expires: exp,
+		MaxAge:  math.MaxInt64,
+		Path:    "/",
+	})
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -130,9 +138,13 @@ func CheckAdminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	exp := time.Now().Add(time.Hour)
 	http.SetCookie(w, &http.Cookie{
-		Name:  "token",
-		Value: tokenString,
+		Value:   tokenString,
+		Name:    "token",
+		Expires: exp,
+		MaxAge:  900000,
+		Path:    "/",
 	})
 	Cache.Store(login, tokenString)
 	if user.IsAdmin {
