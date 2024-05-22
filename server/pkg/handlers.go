@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -344,6 +345,25 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error rebuilding database: %s", err)
 		http.Error(w, "Eroor rebuilding database", http.StatusInternalServerError)
 	}
+
+  //   // TODO!!
+  //   data := map[string]int{"target_id":songId}
+  //   jsonData, err := json.Marshal(data)
+  //   if err != nil {
+  //       log.Printf("Error serializing song id: %v", err)
+  //   }
+		//
+  //   req, err := http.NewRequest("POST", "http://localhost:6969/mfcc", bytes.NewBuffer(jsonData))
+  //   if err != nil {
+  //       log.Printf("Error deleting from AI db: %v", err)
+  //   }
+		//
+  //   if req.Response.StatusCode != 200 {
+  //       log.Printf("Expected 200 got %d", req.Response.StatusCode)
+		// http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
+  //   }
+
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -369,6 +389,22 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
 		return
 	}
+
+    data := map[string]int{"target_id":songId}
+    jsonData, err := json.Marshal(data)
+    if err != nil {
+        log.Printf("Error serializing song id: %v", err)
+    }
+    
+    req, err := http.NewRequest("DELETE", "http://localhost:6969/delete_song", bytes.NewBuffer(jsonData))
+    if err != nil {
+        log.Printf("Error deleting from AI db: %v", err)
+    }
+
+    if req.Response.StatusCode != 200 {
+        log.Printf("Expected 200 got %d", req.Response.StatusCode)
+		http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
+    }
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
