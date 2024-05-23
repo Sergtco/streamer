@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"stream/pkg/filesystem"
@@ -41,8 +40,6 @@ Returns fs.ErrExist if dtatabase exists
 func InitDatabase() error {
 	if _, err := os.Stat(DataBasePath); os.IsNotExist(err) {
 		os.Create(DataBasePath)
-	} else {
-		return fs.ErrExist
 	}
 	var err error
 	Database, err = sql.Open("sqlite3", DataBasePath)
@@ -72,7 +69,7 @@ func fillDatabase(songs []structs.Song) error {
 		return fmt.Errorf("Database is closed.")
 	}
 	for _, song := range songs {
-		err := InsertSong(song)
+		_, err := InsertSong(song)
 		if err != nil {
 			log.Println(err)
 		}
@@ -164,21 +161,26 @@ func InsertAlbum(name string, artistId int) (int, error) {
 	return albId, nil
 }
 
-func InsertSong(song structs.Song) error {
+func InsertSong(song structs.Song) (int64, error) {
 	querySongs := "INSERT OR IGNORE INTO songs (name, artist_id, album_id, path) VALUES  (?, ?, ?, ?);"
 	artId, err := InsertArtist(song.Artist)
 	if err != nil {
-		return fmt.Errorf("Error inserting song: %s", err)
+		return -1, fmt.Errorf("Error inserting song: %s", err)
 	}
 	albId, err := InsertAlbum(song.Album, artId)
 	if err != nil {
-		return fmt.Errorf("Error inserting song: %s", err)
+		return -1, fmt.Errorf("Error inserting song: %s", err)
 	}
-	_, err = Database.Exec(querySongs, song.Name, artId, albId, song.Path)
+    res, err := Database.Exec(querySongs, song.Name, artId, albId, song.Path)
+    
 	if err != nil {
-		return fmt.Errorf("Error isnerting song: %s", err)
+		return -1, fmt.Errorf("Error isnerting song: %s", err)
 	}
-	return nil
+    id, err := res.LastInsertId()
+    if err != nil {
+        return -1, fmt.Errorf("Error getting song id: %v", err)
+    }
+	return id, nil
 }
 
 /*
@@ -283,7 +285,7 @@ func GetUser(login string) (*structs.User, error) {
 	defer rows.Close()
 	exist := rows.Next()
 	if !exist {
-		return nil, nil
+        return nil, fmt.Errorf("User: %s doesn't exit", login)
 	}
 	user := &structs.User{}
 	rows.Scan(&user.Id, &user.Name, &user.Login, &user.Password, &user.IsAdmin)
@@ -348,4 +350,98 @@ func DeleteUser(login string) error {
 		return err
 	}
 	return nil
+}
+
+func InsertPlaylist(playlist structs.Playlist) (int, error) {
+    query := "INSERT INTO playlists (user_id, name) VALUES (?, ?)"
+    _, err := Database.Exec(query, playlist.UserId, playlist.Name)
+    if err != nil {
+        return -1, err
+    }
+
+    var playlistId int
+    row := Database.QueryRow("SELECT id FROM playlists WHERE user_id = ? AND name = ?", playlist.UserId, playlist.Name)
+    row.Scan(&playlistId)
+
+    for _, songId := range playlist.Songs {
+        err := AddToPlaylist(songId, playlistId)
+        if err != nil {
+            return -1, err
+        }
+    }
+    return playlistId, nil
+}
+
+func AddToPlaylist(songId int, playlistId int) error {
+    query := "INSERT INTO playlist_items (song_id, playlist_id) VALUES (?, ?)"
+    _, err := Database.Exec(query, songId, playlistId)
+    if err != nil {
+        return err
+    } else {
+        return nil
+    }
+}
+
+func GetPlaylistOwner(playlistId int) (int, error) {
+    query := "SELECT user_id FROM playlists WHERE playlist_id = ?"
+
+    var userId int
+    row := Database.QueryRow(query, playlistId)
+    err := row.Scan(&userId)
+    if err != nil {
+        return -1, err
+    }
+    return userId, nil
+}
+
+func GetPlaylist(id int) (structs.Playlist, error) {
+    var playlist structs.Playlist
+    songs, err := getPlaylistSongs(id)
+    if err != nil {
+        return playlist, err
+    }
+    playlist.Songs = songs
+
+    query := "SELECT user_id, name FROM playlists WHERE id = ?"
+    row := Database.QueryRow(query, id)
+    if err := row.Scan(&playlist.UserId, &playlist.Name); err != nil {
+        return playlist, err
+    }
+    return playlist, nil
+}
+
+func GetUsersPlaylists(id int) ([]int, error) {
+    var playlists []int
+    query := "SELECT playlist_id FROM playlists WHERE user_id = ?"
+    rows, err := Database.Query(query, id)
+    if err != nil {
+        return nil, err
+    }
+
+    for rows.Next() {
+        var playlist int
+        if err := rows.Scan(&playlist); err != nil {
+            return nil, err
+        }
+        playlists = append(playlists, playlist)
+    }
+    return playlists, nil
+}
+
+func getPlaylistSongs(id int) ([]int, error) {
+    var songs []int
+    query := "SELECT song_id FROM playlist_items WHERE playlist_id = ?"
+    rows, err := Database.Query(query, id)
+    if err != nil {
+        return nil, err
+    }
+
+    for rows.Next() {
+        var song int
+        if err := rows.Scan(&song); err != nil {
+            return nil, err
+        }
+        songs = append(songs, song)
+    }
+    return songs, nil
 }
