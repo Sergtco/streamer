@@ -375,12 +375,11 @@ func UploadSong(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	//TODO!!!! ()
-	//   if req.Response.StatusCode != 200 {
-	//       log.Printf("Expected 200 got %d", req.Response.StatusCode)
-	// http.Error(w, fmt.Sprintf("Error fetching song features: %s", err), http.StatusInternalServerError)
-	//   }
-
+    if resp.StatusCode != 200 {
+	    log.Printf("Expected 200 got %d", resp.StatusCode)
+	    http.Error(w, fmt.Sprintf("Error fetching song features: %s", err), http.StatusInternalServerError)
+        return
+    }
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -430,8 +429,8 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-	if req.Response.StatusCode != 200 {
-		log.Printf("Expected 200 got %d", req.Response.StatusCode)
+	if resp.StatusCode != 200 {
+		log.Printf("Expected 200 got %d", resp.StatusCode)
 		http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
         return
 	}
@@ -442,7 +441,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func Radio(w http.ResponseWriter, r *http.Request) {
-	songId, err := strconv.Atoi(r.PathValue("song"))
+	songId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid id", http.StatusBadRequest)
 		return
@@ -469,7 +468,7 @@ func Radio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-	if req.Response.StatusCode != 200 {
+	if resp.StatusCode != 200 {
 		log.Printf("Expected 200 got %d", resp.StatusCode)
 		http.Error(w, fmt.Sprintf("Error ranking songs: %s", err), http.StatusInternalServerError)
         return

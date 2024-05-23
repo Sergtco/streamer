@@ -22,6 +22,8 @@ func main() {
 	router.HandleFunc("POST /add_to_playlist/{playlist_id}/{song_id}", admin.ValidateJwt(http.HandlerFunc(pkg.AddToPlaylist)))
 	router.HandleFunc("GET /get_playlists", admin.ValidateJwt(http.HandlerFunc(pkg.GetUserPlaylists)))
 	router.HandleFunc("POST /login", admin.UserLogin)
+    router.HandleFunc("POST /upload_song", admin.ValidateJwt(http.HandlerFunc(pkg.UploadSong)))
+    router.HandleFunc("POST /radio/{id}", admin.ValidateJwt(http.HandlerFunc(pkg.Radio)))
 	// Admin for browser
 	router.HandleFunc("GET /admin/login", admin.AdminLogin)
 	router.HandleFunc("POST /admin/login", admin.CheckAdminLogin)
@@ -30,8 +32,6 @@ func main() {
 	router.HandleFunc("POST /admin/add_user", admin.ValidateJwt(http.HandlerFunc(admin.AddUser)))
 	router.HandleFunc("POST /admin/change_user", admin.ValidateJwt(http.HandlerFunc(admin.ChangeUser)))
 	router.HandleFunc("POST /admin/delete_user", admin.ValidateJwt(http.HandlerFunc(admin.DeleteUser)))
-    // router.HandleFunc("POST /uploadSong", admin.ValidateJwt(http.HandlerFunc(pkg.UploadSong)))
-    router.HandleFunc("POST /upload_song", pkg.UploadSong)
 
 	server := http.Server{
 		Addr:    ":8080",
