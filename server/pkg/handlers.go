@@ -411,6 +411,8 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		log.Printf("Error serializing song id: %v", err)
+		http.Error(w, fmt.Sprintf("Error serializing song id: %s", err), http.StatusInternalServerError)
+        return
 	}
 
 	model_url := os.Getenv("MODEL_URL")
@@ -431,11 +433,54 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	if req.Response.StatusCode != 200 {
 		log.Printf("Expected 200 got %d", req.Response.StatusCode)
 		http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
+        return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message: Song deleted"}`))
+}
+
+func Radio(w http.ResponseWriter, r *http.Request) {
+	songId, err := strconv.Atoi(r.PathValue("song"))
+	if err != nil {
+		http.Error(w, "Invalid id", http.StatusBadRequest)
+		return
+	}
+
+	data := map[string]int{"id": songId}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("Error serializing song id: %v", err)
+	}
+
+	model_url := os.Getenv("MODEL_URL")
+	req, err := http.NewRequest("POST", "http://"+model_url+":6969/rank_tracks", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("Error deleting from AI db: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error sending request to AI service: %v\n", err)
+		http.Error(w, "Error sending request", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	if req.Response.StatusCode != 200 {
+		log.Printf("Expected 200 got %d", resp.StatusCode)
+		http.Error(w, fmt.Sprintf("Error ranking songs: %s", err), http.StatusInternalServerError)
+        return
+	}
+	bodyBytes, err := io.ReadAll(resp.Body)
+    if err != nil {
+        http.Error(w, "Error reading body", http.StatusInternalServerError)
+    }
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(bodyBytes)
 }
 
 /*
