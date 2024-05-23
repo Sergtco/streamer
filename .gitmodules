@@ -1,0 +1,3 @@
+[submodule "model"]
+	path = model
+	url = http://github.com/Sergtco/ai_mobile_app
