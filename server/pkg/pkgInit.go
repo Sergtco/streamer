@@ -37,4 +37,7 @@ func init() {
 		passwordString.WriteByte(password[i])
 	}
 	_, err = database.InsertUser("Sergtco", "Sergtco", passwordString.String(), 1)
+    if err != nil {
+        log.Printf("error inserting user: %v", err)
+    }
 }

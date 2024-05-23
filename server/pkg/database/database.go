@@ -320,7 +320,7 @@ Inserts user, if user exists returns ErrorUserExists error, else return user Id.
 */
 func InsertUser(name, login, password string, isAdmin int) (int, error) {
 	exists, err := GetUser(login)
-	if err != nil {
+	if err == nil {
 		return 0, err
 	}
 	if exists != nil {
