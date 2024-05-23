@@ -305,7 +305,7 @@ Handler for uploading song
 
 It supports only .mp3 file format (for a while)
 */
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
+func UploadSong(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
 	if err != nil {
 		http.Error(w, "Unable to parse form", http.StatusBadRequest)
@@ -340,29 +340,44 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: do not rebuilding database!
-	err = database.ReinitDatabase()
-	if err != nil {
-		log.Printf("Error rebuilding database: %s", err)
-		http.Error(w, "Eroor rebuilding database", http.StatusInternalServerError)
-	}
+    song, err := filesystem.ConvertToSong(CataloguePath + handler.Filename)
+    if err != nil {
+        http.Error(w, "Error reading file", http.StatusBadRequest)
+        return
+    }
 
-  //   // TODO!!
-  //   data := map[string]int{"target_id":songId}
-  //   jsonData, err := json.Marshal(data)
-  //   if err != nil {
-  //       log.Printf("Error serializing song id: %v", err)
-  //   }
-		//
-  //   req, err := http.NewRequest("POST", "http://localhost:6969/mfcc", bytes.NewBuffer(jsonData))
-  //   if err != nil {
-  //       log.Printf("Error deleting from AI db: %v", err)
-  //   }
-		//
+    songId, err := database.InsertSong(song)
+    if err != nil {
+        http.Error(w, "Error inserting song in db", http.StatusBadRequest)
+        return
+    }
+
+    data := map[string]interface{}{"target_id":songId, "path": CataloguePath + handler.Filename}
+    jsonData, err := json.Marshal(data)
+    if err != nil {
+        log.Printf("Error serializing song id: %v", err)
+    }
+
+    req, err := http.NewRequest("POST", "http://localhost:6969/mfcc", bytes.NewBuffer(jsonData))
+    if err != nil {
+        log.Printf("Error deleting from AI db: %v", err)
+    }
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        log.Printf("Error sending request to AI service: %v\n", err)
+        http.Error(w, "Error sending request", http.StatusInternalServerError)
+        return
+    }
+    defer resp.Body.Close()
+
+    //TODO!!!! ()
   //   if req.Response.StatusCode != 200 {
   //       log.Printf("Expected 200 got %d", req.Response.StatusCode)
-		// http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
+		// http.Error(w, fmt.Sprintf("Error fetching song features: %s", err), http.StatusInternalServerError)
   //   }
-
 
 	w.WriteHeader(http.StatusOK)
 }

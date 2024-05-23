@@ -69,7 +69,7 @@ func fillDatabase(songs []structs.Song) error {
 		return fmt.Errorf("Database is closed.")
 	}
 	for _, song := range songs {
-		err := InsertSong(song)
+		_, err := InsertSong(song)
 		if err != nil {
 			log.Println(err)
 		}
@@ -161,21 +161,26 @@ func InsertAlbum(name string, artistId int) (int, error) {
 	return albId, nil
 }
 
-func InsertSong(song structs.Song) error {
+func InsertSong(song structs.Song) (int64, error) {
 	querySongs := "INSERT OR IGNORE INTO songs (name, artist_id, album_id, path) VALUES  (?, ?, ?, ?);"
 	artId, err := InsertArtist(song.Artist)
 	if err != nil {
-		return fmt.Errorf("Error inserting song: %s", err)
+		return -1, fmt.Errorf("Error inserting song: %s", err)
 	}
 	albId, err := InsertAlbum(song.Album, artId)
 	if err != nil {
-		return fmt.Errorf("Error inserting song: %s", err)
+		return -1, fmt.Errorf("Error inserting song: %s", err)
 	}
-	_, err = Database.Exec(querySongs, song.Name, artId, albId, song.Path)
+    res, err := Database.Exec(querySongs, song.Name, artId, albId, song.Path)
+    
 	if err != nil {
-		return fmt.Errorf("Error isnerting song: %s", err)
+		return -1, fmt.Errorf("Error isnerting song: %s", err)
 	}
-	return nil
+    id, err := res.LastInsertId()
+    if err != nil {
+        return -1, fmt.Errorf("Error getting song id: %v", err)
+    }
+	return id, nil
 }
 
 /*

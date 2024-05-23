@@ -90,3 +90,32 @@ func convertToSongs(paths []string) ([]structs.Song, error) {
 	}
 	return output, nil
 }
+
+func ConvertToSong(path string) (structs.Song, error) {
+    var song structs.Song
+    file, err := os.Open(path)
+    if err != nil {
+        return song, fmt.Errorf("Error opening file %s: %v", path, err)
+    }
+    data, err := tag.ReadFrom(file)
+    if err != nil {
+        splitted := strings.Split(path, "/")
+        song = structs.Song{
+            Id:     -1,
+            Name:   splitted[len(splitted)-1],
+            Artist: "Unknown",
+            Album:  splitted[len(splitted)-1],
+            Path:   path,
+        }
+        log.Print(fmt.Errorf("Error reading file metadata: %s\n", path))
+    } else {
+        song = structs.Song{
+            Id:     -1,
+            Name:   data.Title(),
+            Artist: data.Artist(),
+            Album:  data.Album(),
+            Path:   path,
+        }
+    }
+	return song, nil
+}
