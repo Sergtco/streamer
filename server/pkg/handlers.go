@@ -23,40 +23,40 @@ var SupportedFormats = []string{"mp3", "flac", "wav"}
 
 // url - /add_playlist
 func AddPlaylist(w http.ResponseWriter, r *http.Request) {
-    cookie, _ := r.Cookie("token")
-    claims, err := admin.DecodeLogin(cookie.Value)
-    if err != nil {
-        http.Error(w, "Invalid token", http.StatusBadRequest)
-        return
-    }
-    user, err := database.GetUser(claims.Login)
-    if err != nil || user == nil {
-        http.Error(w, "Invalid token", http.StatusBadRequest)
-    }
+	cookie, _ := r.Cookie("token")
+	claims, err := admin.DecodeLogin(cookie.Value)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusBadRequest)
+		return
+	}
+	user, err := database.GetUser(claims.Login)
+	if err != nil || user == nil {
+		http.Error(w, "Invalid token", http.StatusBadRequest)
+	}
 
-    var newPlaylist structs.Playlist
-    bodyBytes, err := io.ReadAll(r.Body)
-    if err != nil {
-        http.Error(w, "Unable to read request body", http.StatusBadRequest)
-        return
-    }
-    defer r.Body.Close()
+	var newPlaylist structs.Playlist
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Unable to read request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
-    if err := json.Unmarshal(bodyBytes, &newPlaylist); err != nil {
-        http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-        return
-    }
+	if err := json.Unmarshal(bodyBytes, &newPlaylist); err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
 
-    playListId, err := database.InsertPlaylist(newPlaylist)
-    if err != nil {
-        http.Error(w, "Unable to create playlist with this name/songs", http.StatusBadRequest)
-    }
-    newPlaylist.UserId = user.Id
-    newPlaylist.Id = playListId
-    response, err := json.Marshal(newPlaylist)
-    if err != nil {
-        http.Error(w, "Unable to create playlist", http.StatusInternalServerError)
-    }
+	playListId, err := database.InsertPlaylist(newPlaylist)
+	if err != nil {
+		http.Error(w, "Unable to create playlist with this name/songs", http.StatusBadRequest)
+	}
+	newPlaylist.UserId = user.Id
+	newPlaylist.Id = playListId
+	response, err := json.Marshal(newPlaylist)
+	if err != nil {
+		http.Error(w, "Unable to create playlist", http.StatusInternalServerError)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(response)
@@ -64,72 +64,73 @@ func AddPlaylist(w http.ResponseWriter, r *http.Request) {
 
 // url - /add_to_playlist/playlist_id/song_id
 func AddToPlaylist(w http.ResponseWriter, r *http.Request) {
-    playlistId, err := strconv.Atoi(r.PathValue("playlist_id"))
-    if err != nil {
-        http.Error(w, "Invalid playlist id", http.StatusBadRequest)
-        return
-    }
-    songId, err := strconv.Atoi(r.PathValue("song_id"))
-    if err != nil {
-        http.Error(w, "Invalid song id", http.StatusBadRequest)
-        return
-    }
+	playlistId, err := strconv.Atoi(r.PathValue("playlist_id"))
+	if err != nil {
+		http.Error(w, "Invalid playlist id", http.StatusBadRequest)
+		return
+	}
+	songId, err := strconv.Atoi(r.PathValue("song_id"))
+	if err != nil {
+		http.Error(w, "Invalid song id", http.StatusBadRequest)
+		return
+	}
 
-    cookie, _ := r.Cookie("token")
-    claims, err := admin.DecodeLogin(cookie.Value)
-    if err != nil {
-        http.Error(w, "Invalid token", http.StatusBadRequest)
-        return
-    }
+	cookie, _ := r.Cookie("token")
+	claims, err := admin.DecodeLogin(cookie.Value)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusBadRequest)
+		return
+	}
 
-    user, err := database.GetUser(claims.Login)
-    if err != nil || user == nil {
-        http.Error(w, "Invalid token", http.StatusBadRequest)
-        return
-    }
+	user, err := database.GetUser(claims.Login)
+	if err != nil || user == nil {
+		http.Error(w, "Invalid token", http.StatusBadRequest)
+		return
+	}
 
-    playlistOwner, err := database.GetPlaylistOwner(playlistId)
-    if err != nil {
-        http.Error(w, "Invalid playlist id", http.StatusBadRequest)
-        return
-    }
+	playlistOwner, err := database.GetPlaylistOwner(playlistId)
+	if err != nil {
+		http.Error(w, "Invalid playlist id", http.StatusBadRequest)
+		return
+	}
 
-    if playlistOwner != user.Id {
-        http.Error(w, "You don't have permission", http.StatusBadRequest)
-        return
-    }
-    database.AddToPlaylist(songId, playlistId)
+	if playlistOwner != user.Id {
+		http.Error(w, "You don't have permission", http.StatusBadRequest)
+		return
+	}
+	database.AddToPlaylist(songId, playlistId)
 }
 
 type UserPlaylists struct {
-    Playlists []int `json:"playlists"`
+	Playlists []int `json:"playlists"`
 }
+
 // url - /get_playlists (must be authorized!)
 func GetUserPlaylists(w http.ResponseWriter, r *http.Request) {
-    cookie, _ := r.Cookie("token")
-    claims, err := admin.DecodeLogin(cookie.Value)
-    if err != nil {
-        http.Error(w, "Invalid token", http.StatusBadRequest)
-        return
-    }
+	cookie, _ := r.Cookie("token")
+	claims, err := admin.DecodeLogin(cookie.Value)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusBadRequest)
+		return
+	}
 
-    user, err := database.GetUser(claims.Login)
-    if err != nil || user == nil {
-        http.Error(w, "Invalid token", http.StatusBadRequest)
-        return
-    }
-    playlists, err := database.GetUsersPlaylists(user.Id)
-    if err != nil {
-        http.Error(w, "Something went wrong...", http.StatusInternalServerError)
-        return
-    }
+	user, err := database.GetUser(claims.Login)
+	if err != nil || user == nil {
+		http.Error(w, "Invalid token", http.StatusBadRequest)
+		return
+	}
+	playlists, err := database.GetUsersPlaylists(user.Id)
+	if err != nil {
+		http.Error(w, "Something went wrong...", http.StatusInternalServerError)
+		return
+	}
 
-    userPlaylists := UserPlaylists{Playlists: playlists}
-    response, err := json.Marshal(userPlaylists)
-    if err != nil {
-        http.Error(w, "Unable to serialize playlists", http.StatusInternalServerError)
-        return
-    }
+	userPlaylists := UserPlaylists{Playlists: playlists}
+	response, err := json.Marshal(userPlaylists)
+	if err != nil {
+		http.Error(w, "Unable to serialize playlists", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(response)
@@ -211,13 +212,13 @@ func Fetch(w http.ResponseWriter, r *http.Request) {
 	case "playlist":
 		playlist, err := database.GetPlaylist(id)
 		if err != nil {
-		    log.Println("Error:", err)
-		    http.Error(w, "There's no playlist with this id", http.StatusBadRequest)
+			log.Println("Error:", err)
+			http.Error(w, "There's no playlist with this id", http.StatusBadRequest)
 		}
 		res, err = json.Marshal(playlist)
 		if err != nil {
-		    log.Println("Error:", err)
-		    http.Error(w, "Internal Server Error, try again later...", http.StatusInternalServerError)
+			log.Println("Error:", err)
+			http.Error(w, "Internal Server Error, try again later...", http.StatusInternalServerError)
 		}
 	default:
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -340,44 +341,45 @@ func UploadSong(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: do not rebuilding database!
-    song, err := filesystem.ConvertToSong(CataloguePath + handler.Filename)
-    if err != nil {
-        http.Error(w, "Error reading file", http.StatusBadRequest)
-        return
-    }
+	song, err := filesystem.ConvertToSong(CataloguePath + handler.Filename)
+	if err != nil {
+		http.Error(w, "Error reading file", http.StatusBadRequest)
+		return
+	}
 
-    songId, err := database.InsertSong(song)
-    if err != nil {
-        http.Error(w, "Error inserting song in db", http.StatusBadRequest)
-        return
-    }
+	songId, err := database.InsertSong(song)
+	if err != nil {
+		http.Error(w, "Error inserting song in db", http.StatusBadRequest)
+		return
+	}
 
-    data := map[string]interface{}{"target_id":songId, "path": CataloguePath + handler.Filename}
-    jsonData, err := json.Marshal(data)
-    if err != nil {
-        log.Printf("Error serializing song id: %v", err)
-    }
+	data := map[string]interface{}{"id": songId, "path": CataloguePath + handler.Filename}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("Error serializing song id: %v", err)
+	}
 
-    req, err := http.NewRequest("POST", "http://localhost:6969/mfcc", bytes.NewBuffer(jsonData))
-    if err != nil {
-        log.Printf("Error deleting from AI db: %v", err)
-    }
-    req.Header.Set("Content-Type", "application/json")
+	model_url := os.Getenv("MODEL_URL")
+	req, err := http.NewRequest("POST", "http://"+model_url+":6969/mfcc", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("Error deleting from AI db: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
 
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        log.Printf("Error sending request to AI service: %v\n", err)
-        http.Error(w, "Error sending request", http.StatusInternalServerError)
-        return
-    }
-    defer resp.Body.Close()
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error sending request to AI service: %v\n", err)
+		http.Error(w, "Error sending request", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
 
-    //TODO!!!! ()
-  //   if req.Response.StatusCode != 200 {
-  //       log.Printf("Expected 200 got %d", req.Response.StatusCode)
-		// http.Error(w, fmt.Sprintf("Error fetching song features: %s", err), http.StatusInternalServerError)
-  //   }
+	//TODO!!!! ()
+	//   if req.Response.StatusCode != 200 {
+	//       log.Printf("Expected 200 got %d", req.Response.StatusCode)
+	// http.Error(w, fmt.Sprintf("Error fetching song features: %s", err), http.StatusInternalServerError)
+	//   }
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -405,21 +407,31 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    data := map[string]int{"target_id":songId}
-    jsonData, err := json.Marshal(data)
-    if err != nil {
-        log.Printf("Error serializing song id: %v", err)
-    }
-    
-    req, err := http.NewRequest("DELETE", "http://localhost:6969/delete_song", bytes.NewBuffer(jsonData))
-    if err != nil {
-        log.Printf("Error deleting from AI db: %v", err)
-    }
+	data := map[string]int{"id": songId}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("Error serializing song id: %v", err)
+	}
 
-    if req.Response.StatusCode != 200 {
-        log.Printf("Expected 200 got %d", req.Response.StatusCode)
+	model_url := os.Getenv("MODEL_URL")
+	req, err := http.NewRequest("DELETE", "http://"+model_url+":6969/delete_song", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("Error deleting from AI db: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error sending request to AI service: %v\n", err)
+		http.Error(w, "Error sending request", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	if req.Response.StatusCode != 200 {
+		log.Printf("Expected 200 got %d", req.Response.StatusCode)
 		http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
-    }
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
