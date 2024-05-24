@@ -47,11 +47,11 @@ func AddPlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    newPlaylist.UserId = user.Id
 	playListId, err := database.InsertPlaylist(newPlaylist)
 	if err != nil {
 		http.Error(w, "Unable to create playlist with this name/songs", http.StatusBadRequest)
 	}
-	newPlaylist.UserId = user.Id
 	newPlaylist.Id = playListId
 	response, err := json.Marshal(newPlaylist)
 	if err != nil {
