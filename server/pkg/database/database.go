@@ -451,19 +451,32 @@ func GetPlaylist(id int) (structs.Playlist, error) {
 	return playlist, nil
 }
 
-func GetUsersPlaylists(id int) ([]int, error) {
-	var playlists []int
-	query := "SELECT id FROM playlists WHERE user_id = ?"
-	rows, err := Database.Query(query, id)
+func GetUsersPlaylists(userId int) ([]structs.Playlist, error) {
+	var playlists []structs.Playlist
+	query := "SELECT id, name FROM playlists WHERE user_id = ?"
+	rows, err := Database.Query(query, userId)
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
-		var playlist int
-		if err := rows.Scan(&playlist); err != nil {
+		var playlist structs.Playlist
+        playlist.UserId = userId
+		if err := rows.Scan(&playlist.Id, &playlist.Name); err != nil {
 			return nil, err
 		}
+        querySongs := "SELECT song_id FROM playlist_items WHERE playlist_id = ?"
+        songRows, err := Database.Query(querySongs, playlist.Id)
+        if err != nil {
+            return nil, err
+        }
+        var songs []int
+        for songRows.Next() {
+            var song_id int
+            songRows.Scan(&song_id)
+            songs = append(songs, song_id)
+        }
+        playlist.Songs = songs
 		playlists = append(playlists, playlist)
 	}
 	return playlists, nil
