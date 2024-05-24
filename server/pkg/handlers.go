@@ -174,6 +174,7 @@ func GetUserPlaylists(w http.ResponseWriter, r *http.Request) {
 	}
 	playlists, err := database.GetUsersPlaylists(user.Id)
 	if err != nil {
+        log.Printf("Error in database: %v", err)
 		http.Error(w, "Something went wrong...", http.StatusInternalServerError)
 		return
 	}
