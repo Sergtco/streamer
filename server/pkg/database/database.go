@@ -453,7 +453,7 @@ func GetPlaylist(id int) (structs.Playlist, error) {
 
 func GetUsersPlaylists(id int) ([]int, error) {
 	var playlists []int
-	query := "SELECT playlist_id FROM playlists WHERE user_id = ?"
+	query := "SELECT id FROM playlists WHERE user_id = ?"
 	rows, err := Database.Query(query, id)
 	if err != nil {
 		return nil, err
