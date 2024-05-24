@@ -1,0 +1,184 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "title": "stream.",
+    "version": "1.0.0"
+  },
+  "basePath": "/",
+  "paths": {
+    "/add_to_playlist/{playlist_id}/{song_id}": {
+      "post": {
+        "tags": [
+          "playlist"
+        ],
+        "summary": "Adds song song to playlist",
+        "operationId": "addToPlaylist",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "PlaylistId",
+            "description": "Id of playlist",
+            "name": "playlist_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "SongId",
+            "description": "Id of song",
+            "name": "song_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/statusOk"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/app_playlist": {
+      "post": {
+        "tags": [
+          "playlist"
+        ],
+        "summary": "Adds new playlist for user.",
+        "operationId": "addPlaylist",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/playlist"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/get_playlists": {
+      "post": {
+        "tags": [
+          "playlist"
+        ],
+        "summary": "Returns all user's playlists.",
+        "operationId": "getPlaylists",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/playlists"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    }
+  },
+  "responses": {
+    "badRequest": {
+      "description": "",
+      "headers": {
+        "code": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Message"
+        },
+        "message": {
+          "type": "string",
+          "description": "Code"
+        }
+      }
+    },
+    "itnernalServerError": {
+      "description": "",
+      "headers": {
+        "code": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Message"
+        },
+        "message": {
+          "type": "string",
+          "description": "Code"
+        }
+      }
+    },
+    "playlist": {
+      "description": "",
+      "headers": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "songs": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "user_id": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "playlists": {
+      "description": "",
+      "headers": {
+        "playlists": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "User's playlists"
+        }
+      }
+    },
+    "statusOk": {
+      "description": "",
+      "headers": {
+        "code": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Message"
+        },
+        "message": {
+          "type": "string",
+          "description": "Code"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "basic": {
+      "type": "basic"
+    }
+  }
+}

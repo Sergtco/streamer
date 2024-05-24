@@ -27,6 +27,7 @@ type User struct {
 	IsAdmin  bool   `json:"is_admin"`
 }
 
+//swagger:response playlist
 type Playlist struct {
 	Id     int    `json:"id"`
 	UserId int    `json:"user_id"`

@@ -21,7 +21,13 @@ import (
 
 var SupportedFormats = []string{"mp3", "flac", "wav"}
 
-// url - /add_playlist
+// swagger:route POST /app_playlist playlist addPlaylist
+// Adds new playlist for user.
+// responses:
+//
+//	200: playlist
+//	400: badRequest
+//	500: internalServerError
 func AddPlaylist(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("token")
 	claims, err := admin.DecodeLogin(cookie.Value)
@@ -116,6 +122,15 @@ func DeleteFromPlaylist(w http.ResponseWriter, r *http.Request) {
 }
 
 // url - /add_to_playlist/playlist_id/song_id
+// swagger:route POST /add_to_playlist/{playlist_id}/{song_id} playlist addToPlaylist
+//
+// # Adds song song to playlist
+//
+// responses:
+//
+//	200: statusOk
+//	400: badRequest
+//	500: internalServerError
 func AddToPlaylist(w http.ResponseWriter, r *http.Request) {
 	playlistId, err := strconv.Atoi(r.PathValue("playlist_id"))
 	if err != nil {
@@ -153,13 +168,25 @@ func AddToPlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	database.AddToPlaylist(songId, playlistId)
+	w.WriteHeader(200)
+	return
 }
 
+//swagger:response playlists
 type UserPlaylists struct {
+	//User's playlists
 	Playlists []int `json:"playlists"`
 }
 
-// url - /get_playlists (must be authorized!)
+// swagger:route POST /get_playlists playlist getPlaylists
+//
+// Returns all user's playlists.
+//
+// responses:
+//
+//	200: playlists
+//	400: badRequest
+//	500: internalServerError
 func GetUserPlaylists(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("token")
 	claims, err := admin.DecodeLogin(cookie.Value)
