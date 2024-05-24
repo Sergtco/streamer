@@ -179,8 +179,7 @@ func GetUserPlaylists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userPlaylists := UserPlaylists{Playlists: playlists}
-	response, err := json.Marshal(userPlaylists)
+	response, err := json.Marshal(playlists)
 	if err != nil {
 		http.Error(w, "Unable to serialize playlists", http.StatusInternalServerError)
 		return
