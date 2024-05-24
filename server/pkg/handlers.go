@@ -122,6 +122,7 @@ func AddToPlaylist(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid playlist id", http.StatusBadRequest)
 		return
 	}
+
 	songId, err := strconv.Atoi(r.PathValue("song_id"))
 	if err != nil {
 		http.Error(w, "Invalid song id", http.StatusBadRequest)

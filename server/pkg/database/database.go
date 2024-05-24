@@ -424,7 +424,7 @@ func AddToPlaylist(songId int, playlistId int) error {
 }
 
 func GetPlaylistOwner(playlistId int) (int, error) {
-	query := "SELECT user_id FROM playlists WHERE playlist_id = ?"
+	query := "SELECT user_id FROM playlists WHERE id = ?"
 
 	var userId int
 	row := Database.QueryRow(query, playlistId)
