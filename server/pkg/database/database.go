@@ -473,12 +473,15 @@ func GetUsersPlaylists(userId int) ([]structs.Playlist, error) {
         var songs []int
         for songRows.Next() {
             var song_id int
-            songRows.Scan(&song_id)
+            if err := songRows.Scan(&song_id); err != nil {
+                return nil, err
+            }
             songs = append(songs, song_id)
         }
         playlist.Songs = songs
 		playlists = append(playlists, playlist)
 	}
+    fmt.Println(playlists)
 	return playlists, nil
 }
 

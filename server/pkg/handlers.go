@@ -172,6 +172,7 @@ func GetUserPlaylists(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid token", http.StatusBadRequest)
 		return
 	}
+
 	playlists, err := database.GetUsersPlaylists(user.Id)
 	if err != nil {
         log.Printf("Error in database: %v", err)
