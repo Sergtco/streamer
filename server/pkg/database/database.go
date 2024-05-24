@@ -459,6 +459,7 @@ func GetUsersPlaylists(userId int) ([]structs.Playlist, error) {
 		return nil, err
 	}
 
+    fmt.Println(userId)
 	for rows.Next() {
 		var playlist structs.Playlist
         playlist.UserId = userId
