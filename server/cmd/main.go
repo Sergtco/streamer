@@ -24,6 +24,8 @@ func main() {
 	router.HandleFunc("POST /login", admin.UserLogin)
     router.HandleFunc("POST /upload_song", admin.ValidateJwt(http.HandlerFunc(pkg.UploadSong)))
     router.HandleFunc("POST /radio/{id}", admin.ValidateJwt(http.HandlerFunc(pkg.Radio)))
+	router.HandleFunc("DELETE /delete_playlist/{id}", admin.ValidateJwt(http.HandlerFunc(pkg.DeletePlaylist)))
+	router.HandleFunc("DELETE /delete_from_playlist/{playlist_id}/{song_id}", admin.ValidateJwt(http.HandlerFunc(pkg.DeleteFromPlaylist)))
 	// Admin for browser
 	router.HandleFunc("GET /admin/login", admin.AdminLogin)
 	router.HandleFunc("POST /admin/login", admin.CheckAdminLogin)

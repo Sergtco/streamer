@@ -62,6 +62,59 @@ func AddPlaylist(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+
+// url - /delete_playlist/{id}
+func DeletePlaylist(w http.ResponseWriter, r *http.Request) {
+	playlistId, err := strconv.Atoi(r.PathValue("playlist_id"))
+	if err != nil {
+		http.Error(w, "Invalid playlist id", http.StatusBadRequest)
+		return
+	}
+
+	cookie, _ := r.Cookie("token")
+	claims, err := admin.DecodeLogin(cookie.Value)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusBadRequest)
+		return
+	}
+
+	user, err := database.GetUser(claims.Login)
+	if err != nil || user == nil {
+		http.Error(w, "Invalid token", http.StatusBadRequest)
+		return
+	}
+
+    err = database.DeletePlaylist(user.Id, playlistId)
+    if err != nil {
+        http.Error(w, "Invalid id", http.StatusBadRequest)
+        return
+    }
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// url - /delete_from_playlist/{playlist_id}/{song_id}
+func DeleteFromPlaylist(w http.ResponseWriter, r *http.Request) {
+	playlistId, err := strconv.Atoi(r.PathValue("playlist_id"))
+	if err != nil {
+		http.Error(w, "Invalid playlist id", http.StatusBadRequest)
+		return
+	}
+
+	songId, err := strconv.Atoi(r.PathValue("song_id"))
+	if err != nil {
+		http.Error(w, "Invalid song id", http.StatusBadRequest)
+		return
+	}
+    err = database.DeleteFromPlaylist(playlistId, songId)
+    if err != nil {
+        http.Error(w, "Invalid id", http.StatusBadRequest)
+        return
+    }
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // url - /add_to_playlist/playlist_id/song_id
 func AddToPlaylist(w http.ResponseWriter, r *http.Request) {
 	playlistId, err := strconv.Atoi(r.PathValue("playlist_id"))

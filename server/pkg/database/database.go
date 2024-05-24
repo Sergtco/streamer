@@ -75,7 +75,7 @@ func InitDatabase() error {
 		})
 		req, err := http.NewRequest("POST", "http://"+model_url+":6969/mfcc", bytes.NewBuffer(jsonData))
 		if err != nil {
-			log.Printf("Error deleting from AI db: %v", err)
+			log.Printf("Error getting from AI db: %v", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
@@ -244,6 +244,24 @@ func DeleteSong(id int) (structs.Song, error) {
 		return song, err
 	}
 	return song, nil
+}
+
+func DeleteFromPlaylist(playlistId, songId int) error {
+    query := "DELETE FROM playlist_items WHERE playlist_id = ? AND song_id = ?"
+    _, err := Database.Exec(query, playlistId, songId)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+func DeletePlaylist(userId, playlistId int) error {
+    query := "DELETE FROM playlists WHERE id = ? AND user_id = ?"
+    _, err := Database.Exec(query, playlistId, userId)
+    if err != nil {
+        return err
+    }
+    return nil
 }
 
 /*
