@@ -582,7 +582,7 @@ type RadioResponse struct {
 //	400: badRequest
 //	500: internalServerError
 func Radio(w http.ResponseWriter, r *http.Request) {
-	songId, err := strconv.Atoi(r.PathValue("id"))
+	songId, err := strconv.Atoi(r.PathValue("song_id"))
 	if err != nil {
 		http.Error(w, "Invalid id", http.StatusBadRequest)
 		return
