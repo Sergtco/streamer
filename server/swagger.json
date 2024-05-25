@@ -15,6 +15,26 @@
   },
   "basePath": "/",
   "paths": {
+    "/add_playlist": {
+      "post": {
+        "tags": [
+          "playlist"
+        ],
+        "summary": "Adds new playlist for user.",
+        "operationId": "addPlaylist",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/playlist"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
     "/add_to_playlist/{playlist_id}/{song_id}": {
       "post": {
         "tags": [
@@ -55,16 +75,242 @@
         }
       }
     },
-    "/app_playlist": {
+    "/admin": {
+      "get": {
+        "description": "Admin index page",
+        "tags": [
+          "admin"
+        ],
+        "operationId": "adminIndex",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/htmlPage"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/admin/add_user": {
       "post": {
+        "description": "Add user",
+        "tags": [
+          "admin",
+          "user"
+        ],
+        "operationId": "addUser",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "Login",
+            "name": "login",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "x-go-name": "Password",
+            "name": "password",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "x-go-name": "Name",
+            "name": "name",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "x-go-name": "IsAdmin",
+            "name": "is_admin",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "303": {
+            "$ref": "#/responses/seeOther"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/admin/change_user": {
+      "post": {
+        "tags": [
+          "admin",
+          "user"
+        ],
+        "summary": "Change user's data.",
+        "operationId": "changeUser",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/statusOk"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/admin/delete_user": {
+      "delete": {
+        "tags": [
+          "admin",
+          "user"
+        ],
+        "summary": "Completely delete user.",
+        "operationId": "deleteUser",
+        "responses": {
+          "303": {
+            "$ref": "#/responses/seeOther"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/admin/login": {
+      "get": {
+        "description": "Uses `LoginForm` struct to deserialize.",
+        "tags": [
+          "admin"
+        ],
+        "summary": "Gets from with login and hashed password.",
+        "operationId": "adminLogin",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/statusOk"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/admin/songs": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Shows list of all songs.",
+        "operationId": "adminSongs",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/htmlPage"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/delete_from_playlist/{playlist_id}/{song_id}": {
+      "delete": {
+        "tags": [
+          "playlist"
+        ],
+        "summary": "Adds song song to playlist",
+        "operationId": "deleteFromPlaylist",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/statusOk"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/delete_playlist/{playlist_id}": {
+      "delete": {
         "tags": [
           "playlist"
         ],
         "summary": "Adds new playlist for user.",
-        "operationId": "addPlaylist",
+        "operationId": "deletePlaylist",
         "responses": {
           "200": {
-            "$ref": "#/responses/playlist"
+            "$ref": "#/responses/statusOk"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/delete_song/{song_id}": {
+      "delete": {
+        "description": "Handler for radio",
+        "tags": [
+          "file"
+        ],
+        "operationId": "uploadSong",
+        "parameters": [
+          {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8"
+            },
+            "x-go-name": "Data",
+            "description": "Song data",
+            "name": "data",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/radioResponse"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/fetch/{type}?id=id": {
+      "get": {
+        "description": "type - [song, album, artist, playlist, all]\n`id` - actual id (not needed if type is all)\nfetches some model by id.",
+        "tags": [
+          "song",
+          "album",
+          "artist",
+          "playlist"
+        ],
+        "operationId": "fetch",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/fetchResponse"
           },
           "400": {
             "$ref": "#/responses/badRequest"
@@ -76,7 +322,7 @@
       }
     },
     "/get_playlists": {
-      "post": {
+      "get": {
         "tags": [
           "playlist"
         ],
@@ -85,6 +331,155 @@
         "responses": {
           "200": {
             "$ref": "#/responses/playlists"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "description": "Uses `LoginForm` struct to deserialize.",
+        "tags": [
+          "user"
+        ],
+        "summary": "Gets json with login and hashed password.",
+        "operationId": "userLogin",
+        "parameters": [
+          {
+            "x-go-name": "Login",
+            "description": "Login",
+            "name": "login",
+            "in": "body",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "x-go-name": "Password",
+            "description": "Password",
+            "name": "password",
+            "in": "body",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/statusOk"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/play/{song_id}": {
+      "get": {
+        "description": "Gets m3u8 playlist file",
+        "tags": [
+          "song"
+        ],
+        "operationId": "play",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/playResponse"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/radio/{song_id}": {
+      "get": {
+        "description": "Handler for radio",
+        "tags": [
+          "file"
+        ],
+        "operationId": "uploadSong",
+        "parameters": [
+          {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8"
+            },
+            "x-go-name": "Data",
+            "description": "Song data",
+            "name": "data",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/radioResponse"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/segments/{song_id}/{file}": {
+      "get": {
+        "description": "Server responds with .ts file.",
+        "tags": [
+          "song",
+          "file"
+        ],
+        "summary": "Fetches song's segment by its' id.",
+        "operationId": "play",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/segmentResponse"
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "500": {
+            "$ref": "#/responses/internalServerError"
+          }
+        }
+      }
+    },
+    "/upload_song": {
+      "post": {
+        "description": "Handler for radio",
+        "tags": [
+          "file"
+        ],
+        "operationId": "uploadSong",
+        "parameters": [
+          {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8"
+            },
+            "x-go-name": "Data",
+            "description": "Song data",
+            "name": "data",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/radioResponse"
           },
           "400": {
             "$ref": "#/responses/badRequest"
@@ -111,7 +506,29 @@
         }
       }
     },
-    "itnernalServerError": {
+    "fetchResponse": {
+      "description": "",
+      "headers": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "id\nin:query"
+        },
+        "type": {
+          "type": "string",
+          "description": "type"
+        }
+      }
+    },
+    "htmlPage": {
+      "description": "",
+      "headers": {
+        "data": {
+          "type": "string"
+        }
+      }
+    },
+    "internalServerError": {
       "description": "",
       "headers": {
         "code": {
@@ -122,6 +539,16 @@
         "message": {
           "type": "string",
           "description": "Code"
+        }
+      }
+    },
+    "playResponse": {
+      "description": "",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "format": "uint8"
         }
       }
     },
@@ -158,6 +585,40 @@
             "format": "int64"
           },
           "description": "User's playlists"
+        }
+      }
+    },
+    "radioResponse": {
+      "description": "",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "format": "uint8"
+        }
+      }
+    },
+    "seeOther": {
+      "description": "",
+      "headers": {
+        "code": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Message"
+        },
+        "message": {
+          "type": "string",
+          "description": "Code"
+        }
+      }
+    },
+    "segmentResponse": {
+      "description": "",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "format": "uint8"
         }
       }
     },

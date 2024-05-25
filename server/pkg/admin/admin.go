@@ -18,6 +18,19 @@ import (
 
 var Cache sync.Map = sync.Map{}
 
+// swagger:response htmlPage
+type HtmlPage struct {
+	Data string `json:"data"`
+}
+
+// swagger:route GET /admin admin adminIndex
+//
+// Admin index page
+// responses:
+//
+//	200: htmlPage
+//	400: badRequest
+//	500: internalServerError
 func AdminIndex(w http.ResponseWriter, r *http.Request) {
 	users, err := database.GetAllUsers()
 	if err != nil {
@@ -28,6 +41,14 @@ func AdminIndex(w http.ResponseWriter, r *http.Request) {
 	comp.Render(r.Context(), w)
 }
 
+// swagger:route POST /admin/add_user admin user addUser
+//
+// Add user
+// responses:
+//
+//	303: seeOther
+//	400: badRequest
+//	500: internalServerError
 func AddUser(w http.ResponseWriter, r *http.Request) {
 	newUser := &structs.User{}
 	newUser.IsAdmin = len(r.FormValue("admin")) > 0
@@ -46,6 +67,14 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// swagger:route POST /admin/change_user admin user changeUser
+//
+// Change user's data.
+// responses:
+//
+//	200: statusOk
+//	400: badRequest
+//	500: internalServerError
 func ChangeUser(w http.ResponseWriter, r *http.Request) {
 	newUser := &structs.User{}
 	newUser.Login = r.FormValue("login")
@@ -60,6 +89,14 @@ func ChangeUser(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// swagger:route DELETE /admin/delete_user admin user deleteUser
+//
+// Completely delete user.
+// responses:
+//
+//	303: seeOther
+//	400: badRequest
+//	500: internalServerError
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	login := r.FormValue("login")
 	err := database.DeleteUser(login)
@@ -70,16 +107,32 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+//swagger:parameters userLogin
 type LoginForm struct {
-	Login    string `json:"login"`
+	//Login
+	//in:body
+	Login string `json:"login"`
+	//Password
+	//in:body
 	Password string `json:"password"`
 }
 
-/*
-Gets json with login and hashed password.
+type LoginResponse struct {
+	//Token
+	//in:Header
+	Token string `json:"token"`
+}
 
-Uses `LoginForm` struct to deserialize.
-*/
+// swagger:route POST /login user userLogin
+//
+// Gets json with login and hashed password.
+//
+// Uses `LoginForm` struct to deserialize.
+// responses:
+//
+//	200: statusOk
+//	400: badRequest
+//	500: internalServerError
 func UserLogin(w http.ResponseWriter, r *http.Request) {
 	data, _ := io.ReadAll(r.Body)
 	form := &LoginForm{}
@@ -110,6 +163,16 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// swagger:route GET /admin/login admin adminLogin
+//
+// Gets from with login and hashed password.
+//
+// Uses `LoginForm` struct to deserialize.
+// responses:
+//
+//	200: statusOk
+//	400: badRequest
+//	500: internalServerError
 func AdminLogin(w http.ResponseWriter, r *http.Request) {
 	comp := views.Login("")
 	comp.Render(r.Context(), w)
@@ -177,6 +240,14 @@ func ValidateJwt(handler http.Handler) http.HandlerFunc {
 	})
 }
 
+// swagger:route GET /admin/songs admin adminSongs
+//
+// Shows list of all songs.
+// responses:
+//
+//	200: htmlPage
+//	400: badRequest
+//	500: internalServerError
 func ListSongs(w http.ResponseWriter, r *http.Request) {
 	songs, err := database.GetAllSongs()
 	if err != nil {

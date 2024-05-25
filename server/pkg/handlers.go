@@ -21,7 +21,7 @@ import (
 
 var SupportedFormats = []string{"mp3", "flac", "wav"}
 
-// swagger:route POST /app_playlist playlist addPlaylist
+// swagger:route POST /add_playlist playlist addPlaylist
 // Adds new playlist for user.
 // responses:
 //
@@ -53,7 +53,7 @@ func AddPlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    newPlaylist.UserId = user.Id
+	newPlaylist.UserId = user.Id
 	playListId, err := database.InsertPlaylist(newPlaylist)
 	if err != nil {
 		http.Error(w, "Unable to create playlist with this name/songs", http.StatusBadRequest)
@@ -68,8 +68,13 @@ func AddPlaylist(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-
-// url - /delete_playlist/{id}
+// swagger:route DELETE /delete_playlist/{playlist_id} playlist deletePlaylist
+// Adds new playlist for user.
+// responses:
+//
+//	200: statusOk
+//	400: badRequest
+//	500: internalServerError
 func DeletePlaylist(w http.ResponseWriter, r *http.Request) {
 	playlistId, err := strconv.Atoi(r.PathValue("playlist_id"))
 	if err != nil {
@@ -90,16 +95,24 @@ func DeletePlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    err = database.DeletePlaylist(user.Id, playlistId)
-    if err != nil {
-        http.Error(w, "Invalid id", http.StatusBadRequest)
-        return
-    }
+	err = database.DeletePlaylist(user.Id, playlistId)
+	if err != nil {
+		http.Error(w, "Invalid id", http.StatusBadRequest)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-// url - /delete_from_playlist/{playlist_id}/{song_id}
+// swagger:route DELETE /delete_from_playlist/{playlist_id}/{song_id} playlist deleteFromPlaylist
+//
+// # Adds song song to playlist
+//
+// responses:
+//
+//	200: statusOk
+//	400: badRequest
+//	500: internalServerError
 func DeleteFromPlaylist(w http.ResponseWriter, r *http.Request) {
 	playlistId, err := strconv.Atoi(r.PathValue("playlist_id"))
 	if err != nil {
@@ -112,16 +125,15 @@ func DeleteFromPlaylist(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid song id", http.StatusBadRequest)
 		return
 	}
-    err = database.DeleteFromPlaylist(playlistId, songId)
-    if err != nil {
-        http.Error(w, "Invalid id", http.StatusBadRequest)
-        return
-    }
+	err = database.DeleteFromPlaylist(playlistId, songId)
+	if err != nil {
+		http.Error(w, "Invalid id", http.StatusBadRequest)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-// url - /add_to_playlist/playlist_id/song_id
 // swagger:route POST /add_to_playlist/{playlist_id}/{song_id} playlist addToPlaylist
 //
 // # Adds song song to playlist
@@ -178,7 +190,7 @@ type UserPlaylists struct {
 	Playlists []int `json:"playlists"`
 }
 
-// swagger:route POST /get_playlists playlist getPlaylists
+// swagger:route GET /get_playlists playlist getPlaylists
 //
 // Returns all user's playlists.
 //
@@ -203,7 +215,7 @@ func GetUserPlaylists(w http.ResponseWriter, r *http.Request) {
 
 	playlists, err := database.GetUsersPlaylists(user.Id)
 	if err != nil {
-        log.Printf("Error in database: %v", err)
+		log.Printf("Error in database: %v", err)
 		http.Error(w, "Something went wrong...", http.StatusInternalServerError)
 		return
 	}
@@ -218,13 +230,16 @@ func GetUserPlaylists(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-// To access the song url should look like: http://localhost:8080/play/song_id
+// swagger:route GET /play/{song_id} song play
 //
-// 'song_id' - the id of song
+// Gets m3u8 playlist file
+// responses:
 //
-// Server will respond with m3u8 file.
+//	200: playResponse
+//	400: badRequest
+//	500: internalServerError
 func Play(w http.ResponseWriter, r *http.Request) {
-	songId := r.PathValue("id")
+	songId := r.PathValue("{song_id}")
 
 	err := generateHLS(songId)
 	if err != nil {
@@ -239,9 +254,16 @@ func Play(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, outputPath+songId+"/"+songId+".m3u8")
 }
 
-// url = /fetch/{type}?id=`id`
+// swagger:route GET /fetch/{type}?id=id song album artist playlist fetch
+//
 // type - [song, album, artist, playlist, all]
 // `id` - actual id (not needed if type is all)
+// fetches some model by id.
+// responses:
+//
+//	200: fetchResponse
+//	400: badRequest
+//	500: internalServerError
 func Fetch(w http.ResponseWriter, r *http.Request) {
 	t := r.PathValue("type")
 	var res []byte
@@ -307,6 +329,16 @@ func Fetch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	// swagger:route GET /fetch/{type}?id=id song album artist playlist fetch
+	//
+	// type - [song, album, artist, playlist, all]
+	// `id` - actual id (not needed if type is all)
+	// fetches some model by id.
+	// responses:
+	//
+	//	200: fetchResponse
+	//	400: badRequest
+	//	500: internalServerError
 	w.Write(res)
 }
 
@@ -366,14 +398,17 @@ func generateHLS(songId string) error {
 	return nil
 }
 
-// To access a segment of song url should look like: http://localhost:8080/segments/song_id/segment_xxx.ts
+// swagger:route GET /segments/{song_id}/{file} song file play
 //
-// 'xxx' - the actual segment number.
-// 'song_id' - the actual id of song to stream.
+// Fetches song's segment by its' id.
+// Server responds with .ts file.
+// responses:
 //
-// Server will respond with .ts file.
+//	200: segmentResponse
+//	400: badRequest
+//	500: internalServerError
 func PlaySegment(w http.ResponseWriter, r *http.Request) {
-	songId := r.PathValue("song")
+	songId := r.PathValue("song_id")
 	fileName := r.PathValue("file")
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -383,11 +418,15 @@ func PlaySegment(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, outputPath+songId+"/"+fileName)
 }
 
-/*
-Handler for uploading song
-
-It supports only .mp3 file format (for a while)
-*/
+// swagger:route POST /upload_song song file uploadSong
+//
+// Handler for uploading song
+// It supports only .mp3 file format (for a while)
+// responses:
+//
+//	200: statusOk
+//	400: badRequest
+//	500: internalServerError
 func UploadSong(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
 	if err != nil {
@@ -457,19 +496,24 @@ func UploadSong(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-    if resp.StatusCode != 200 {
-	    log.Printf("Expected 200 got %d", resp.StatusCode)
-	    http.Error(w, fmt.Sprintf("Error fetching song features: %s", err), http.StatusInternalServerError)
-        return
-    }
+	if resp.StatusCode != 200 {
+		log.Printf("Expected 200 got %d", resp.StatusCode)
+		http.Error(w, fmt.Sprintf("Error fetching song features: %s", err), http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
-/*
-Handler for deleting song by id
-*/
+// swagger:route DELETE /delete_song/{song_id} file uploadSong
+//
+// Handler for deleting song by id
+// responses:
+//
+//	200: statusOk
+//	400: badRequest
+//	500: internalServerError
 func DeleteHandler(w http.ResponseWriter, r *http.Request) {
-	songId, err := strconv.Atoi(r.PathValue("song"))
+	songId, err := strconv.Atoi(r.PathValue("song_id"))
 	if err != nil {
 		http.Error(w, "Invalid id", http.StatusBadRequest)
 		return
@@ -493,7 +537,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error serializing song id: %v", err)
 		http.Error(w, fmt.Sprintf("Error serializing song id: %s", err), http.StatusInternalServerError)
-        return
+		return
 	}
 
 	model_url := os.Getenv("MODEL_URL")
@@ -514,7 +558,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	if resp.StatusCode != 200 {
 		log.Printf("Expected 200 got %d", resp.StatusCode)
 		http.Error(w, fmt.Sprintf("Error deleting song: %s", err), http.StatusInternalServerError)
-        return
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -522,6 +566,21 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message: Song deleted"}`))
 }
 
+//swagger:response radioResponse
+type RadioResponse struct {
+	//json array of indices of next songs
+	//in:body
+	Data []byte `json:"data"`
+}
+
+// swagger:route GET /radio/{song_id} file uploadSong
+//
+// Handler for radio
+// responses:
+//
+//	200: radioResponse
+//	400: badRequest
+//	500: internalServerError
 func Radio(w http.ResponseWriter, r *http.Request) {
 	songId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -553,12 +612,12 @@ func Radio(w http.ResponseWriter, r *http.Request) {
 	if resp.StatusCode != 200 {
 		log.Printf("Expected 200 got %d", resp.StatusCode)
 		http.Error(w, fmt.Sprintf("Error ranking songs: %s", err), http.StatusInternalServerError)
-        return
+		return
 	}
 	bodyBytes, err := io.ReadAll(resp.Body)
-    if err != nil {
-        http.Error(w, "Error reading body", http.StatusInternalServerError)
-    }
+	if err != nil {
+		http.Error(w, "Error reading body", http.StatusInternalServerError)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(bodyBytes)
