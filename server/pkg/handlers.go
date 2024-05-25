@@ -72,7 +72,7 @@ func AddPlaylist(w http.ResponseWriter, r *http.Request) {
 // Adds new playlist for user.
 // responses:
 //
-//	200: statusOk
+//	200: statsuOk
 //	400: badRequest
 //	500: internalServerError
 func DeletePlaylist(w http.ResponseWriter, r *http.Request) {
@@ -239,7 +239,7 @@ func GetUserPlaylists(w http.ResponseWriter, r *http.Request) {
 //	400: badRequest
 //	500: internalServerError
 func Play(w http.ResponseWriter, r *http.Request) {
-	songId := r.PathValue("{song_id}")
+	songId := r.PathValue("song_id")
 
 	err := generateHLS(songId)
 	if err != nil {
