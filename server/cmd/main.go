@@ -24,7 +24,7 @@ func main() {
 	router.HandleFunc("POST /add_to_playlist/{playlist_id}/{song_id}", admin.ValidateJwt(http.HandlerFunc(pkg.AddToPlaylist)))
 	router.HandleFunc("GET /get_playlists", admin.ValidateJwt(http.HandlerFunc(pkg.GetUserPlaylists)))
 	router.HandleFunc("POST /login", admin.UserLogin)
-	router.HandleFunc("POST /upload_song", admin.ValidateJwt(http.HandlerFunc(pkg.UploadSong)))
+	// router.HandleFunc("POST /upload_song", admin.ValidateJwt(http.HandlerFunc(pkg.UploadSong)))
 	router.HandleFunc("GET /radio/{song_id}", admin.ValidateJwt(http.HandlerFunc(pkg.Radio)))
 	router.HandleFunc("DELETE /delete_playlist/{playlist_id}", admin.ValidateJwt(http.HandlerFunc(pkg.DeletePlaylist)))
 	router.HandleFunc("DELETE /delete_from_playlist/{playlist_id}/{song_id}", admin.ValidateJwt(http.HandlerFunc(pkg.DeleteFromPlaylist)))
