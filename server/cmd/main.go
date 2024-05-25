@@ -17,7 +17,7 @@ func main() {
 	log.SetFlags(log.LstdFlags)
 	router := http.NewServeMux()
 	router.HandleFunc("/play/{song_id}", pkg.Play)
-	router.HandleFunc("/segments/{song}/{file}", pkg.PlaySegment)
+	router.HandleFunc("/segments/{song_id}/{file}", pkg.PlaySegment)
 	router.HandleFunc("GET /fetch/{type}", admin.ValidateJwt(http.HandlerFunc(pkg.Fetch)))
 	router.HandleFunc("DELETE /delete_song/{song_id}", admin.ValidateJwt(http.HandlerFunc(pkg.DeleteHandler)))
 	router.HandleFunc("POST /add_playlist", admin.ValidateJwt(http.HandlerFunc(pkg.AddPlaylist)))
